@@ -1,5 +1,10 @@
 <template>
     <teleport to="body">
+
+      <teleport to="body">
+          <Question_first :question="d.question" :isOpen="isOpen" @close="isOpen=false; d.selected_id = null;" @confirm="confirm()"/>
+      </teleport>
+
       <!-- <div class="overlay" @click="goexit()"></div> -->
       <div class="profile-container">
         <div class="profile-header">
@@ -10,7 +15,7 @@
           <label @click="$router.push({name: 'BuyerProfile'})">Account Setting</label>
         </div>
         <div class="profile-content" style="position: absolute; bottom: 0; margin-bottom: 20px;">
-          <label @click="goLogout">Logout</label>
+          <label @click="isOpen=true">Logout</label>
         </div>
       </div>
     </teleport>
@@ -18,8 +23,10 @@
 
 <script>
 import { useDataStore } from '../../stores/dataStore';
+import Question_first from '../../modal_global/Question_first.vue';
 
 export default {
+    components: {Question_first},
     methods: {
       goexit(){
         this.$emit("goexit");
@@ -30,6 +37,20 @@ export default {
         this.$emit('stopLocation');
         store.reset();
         window.location.href=`/buyer/logout?id=${id}`;
+      },
+      confirm(){
+
+        this.isOpen = false;
+        this.goLogout();
+      }
+    },
+    data(){
+      return{
+        d: {
+            question: "Do you really want to logout?",
+            selected_id: null,
+        },
+        isOpen: false,
       }
     },
     mounted(){

@@ -7,13 +7,10 @@
       <form @submit.prevent="goSubmitSearch">
         <div class="header-filter-search">
           <label class="filter-header-label">What are you looking for?</label>
-          <label class="more-filter" @click="hide_more_filter = !hide_more_filter">More Filter</label>
+          
         </div><br>
         <div class="filter-search">
-          <select v-model="search_info.name">
-            <option value="Product">Product name</option>
-            <option value="Shop">Shop name</option>
-          </select>
+         
           <input type="text" placeholder="Search ..." v-model="search_text">
           <!-- <img src="../../../images/cancel (1).png" style="width: 10px; height: 10px; padding-left: 20px;" > -->
         </div><br>
@@ -25,11 +22,10 @@
             <option value="Furniture">Furniture</option>
             <option value="Kitchenware">Kitchenware</option>
             <option value="Musical Instrument">Musical Instrument</option>
-            <option value="Office Supplies">Office Supplies</option>
-            <option value="Toys and Games">Toys and Games</option>
-            <option value="Outdoor enhancements">Outdoor enhancements</option>
-            <option value="Personal accessories">Personal accessories</option>
-            <option value="Home Decor">Home Decor</option>
+            <option value="Toys and Games">Boardgames</option>
+            <option value="Outdoor enhancements">Souvenir</option>
+            <option value="Home Decor">Home Decorations</option>
+            <option value="Home Decor">Sculpture</option>
           </select>
           <select v-model="search_info.filter">
             <option value="" disabled>Filter</option>
@@ -38,34 +34,11 @@
           </select>
         </div>
 
-        <input type="submit" style="margin-top: 10px; background-color: green; color: white;" value="Search">
+        <input type="submit" style="margin-top: 10px; padding: 5px; border: 1px solid gray; border-radius: 5px; background-color: #D25E27;; color: white;" value="Search">
       </form>
     </div>
 
-    <div class="search-result">
-      <div>
-        <label style="color: rgb(92, 92, 92); font-size: 15px; font-weight: bolder;">Nearby Shop/s</label>
-      </div>
-      <template v-if="store.nearbyShops.length > 0">
-        <div class="list-of-nearbyshops" v-for="shop in store.nearbyShops" :key="shop" @click="goShop(shop.id)">
-          <div class="nearbyshops-leftside">
-            <img :src="'/'+shop.profile_photo">
-            <div style="display: flex; flex-direction: column;">
-              <label style="font-size: 15px; color: rgb(92, 92, 92);">{{ shop.name }}</label>
-              <label style="font-size: 10px; color: rgb(92, 92, 92);">{{ shop.address }}</label>
-            </div>
-          </div>
-          <div class="nearbyshops-leftside">
-            <img src="../../../images/location.png" @click.stop="goLocation(parseFloat(shop.latitude), parseFloat(shop.longitude))">
-            <img src="../../../images/send.png" @click.stop="goMessage(shop.user_id)">
-          </div>
-        </div>
-      </template>
-      <template v-else>
-        <label style="color: red; font-size: 12px;">NO NEARBY SHOP/S WITHIN {{ store.currentUser_info.nearby_km }} KM</label><br>
-        <label style="color: red; font-size: 10px; font-style: italic;">(Please click the location icon above if not clicked.)</label>
-      </template>
-    </div>
+    
 
     <div class="popular-content">
       <div class="popular-content-header">
@@ -91,16 +64,30 @@
             </div>
             <div class="item-pic">
               <img :src="'/'+product.photos[0].filename" @click="goProduct(product)">
+              <div style="position: absolute; right: 0; bottom: 0;">
+                <img src="../../../images/verify.png" style="width: 30px; height: 30px;" v-if="product.shop.is_verified === 'verified'">
+              </div>
             </div>
             <div class="item-info">
               <div class="item-rate">
-                <img src="../../../images/star.png" class="star-rate" v-for="turn in returnStar('whole',product.overall_rate)" :key="turn">
-                <img src="../../../images/half-star.png" class="star-rate" v-for="turn in returnStar('half',product.overall_rate)" :key="turn">
-                <img src="../../../images/no-star.png" class="star-rate" v-for="turn in returnStar('none',product.overall_rate)" :key="turn">
-                <label>{{ product.overall_rate }}</label>
+                <div>
+                  <img src="../../../images/star.png" class="star-rate" v-for="turn in returnStar('whole',product.overall_rate)" :key="turn">
+                  <img src="../../../images/half-star.png" class="star-rate" v-for="turn in returnStar('half',product.overall_rate)" :key="turn">
+                  <img src="../../../images/no-star.png" class="star-rate" v-for="turn in returnStar('none',product.overall_rate)" :key="turn">
+                  <label>{{ product.overall_rate }}</label>
+                </div>
+                <div>
+                  <label
+                   :style="{backgroundColor: returnColorStatus(product.status)}"
+                   style="color: white; padding: 5px; font-size: 8px; border-radius: 10px; font-weight: bolder;"
+                  >{{ product.status }}</label>
+                </div>
               </div>
               <div class="item-comment">
                 <label>{{ product.reviews.length }} Reviews</label>
+                <div>
+                  <label style="font-weight: bolder;">{{ product.quantity }} stock</label>
+                </div>
               </div>
               <div class="item-shopname" @click="goShop(product.shop.id)">
                 <label>{{ product.shop.name }}</label>
@@ -122,58 +109,6 @@
       </div>
     </div>
 
-    <div class="popular-content">
-      <div class="popular-content-header">
-        <div class="header1">
-          <label class="popular">New</label>
-          <label class="popular-desc">New product have been added. Check it out!</label>
-        </div>
-        <div class="header2" @click="goSearch(search_info={name:'Product',category:'Any',filter:'New'})">
-          <label class="view-all">VIEW ALL</label>
-        </div>
-      </div>
-      <div class="range">
-        <label>This 30 Days</label>
-      </div>
-
-      <div class="content">
-        <div class="content" v-if="!loading_new">
-          <div class="item-content" v-for="(product, index) in new_product" :key="index">
-            <div class="option-icon">
-              <img src="../../../images/location.png" @click="goLocation(parseFloat(product.shop.latitude), parseFloat(product.shop.longitude))">
-              <img src="../../../images/send.png" @click="goMessage(product.shop.user_id, product)">
-            </div>
-            <div class="item-pic">
-              <img :src="'/'+product.photos[0].filename" @click="goProduct(product)">
-            </div>
-            <div class="item-info">
-              <div class="item-rate">
-                <img src="../../../images/star.png" class="star-rate" v-for="turn in returnStar('whole',product.overall_rate)" :key="turn">
-                <img src="../../../images/half-star.png" class="star-rate" v-for="turn in returnStar('half',product.overall_rate)" :key="turn">
-                <img src="../../../images/no-star.png" class="star-rate" v-for="turn in returnStar('none',product.overall_rate)" :key="turn">
-                <label>{{ product.overall_rate }}</label>
-              </div>
-              <div class="item-comment">
-                <label>{{ product.reviews.length }} Reviews</label>
-              </div>
-              <div class="item-shopname" @click="goShop(product.shop.id)">
-                <label>{{ product.shop.name }}</label>
-              </div>
-              <div class="item-name">
-                <label style="text-decoration: underline;" @click="goProduct(product)">{{ product.name }}</label>
-              </div>
-              <div class="item-price">
-                <label>PHP {{ product.price }}</label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="overlay" v-else>
-          <img src="../../../images/kOnzy.gif">
-        </div>
-      </div>
-    </div><br><br><br>
-
     <div class="shop-header" style="padding-left: 20px;">
       <label style="font-size: 25px; font-weight: bolder;">SHOPS</label>
     </div>
@@ -193,7 +128,10 @@
                     <img :src="'/'+shop.profile_photo">
                   </div>
                   <div style="font-size: 10px; display: flex; flex-direction: column; gap: 2px;">
-                    <label style="font-size: 14px;">{{ shop.name }}</label>
+                    <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
+                      <label style="font-size: 14px;">{{ shop.name }}</label>
+                      <img src="../../../images/verify.png" style="width: 20px; height: 20px;" v-if="shop.is_verified === 'verified'">
+                    </div>
                     <label style="font-weight: bolder;">{{shop.overall_rate}} ({{ shop.reviews.filter(review => review.review_type === 'shop').length }} review/s)</label>
                     <label>{{ shop.address }}</label>
                   </div>
@@ -208,37 +146,6 @@
             </div>
           </div>
         </div><br><br>
-      </div>
-      
-      <div>
-        <div class="shop-content">
-                  <div class="shop-header">
-          <label>Latest</label>
-        </div>
-          <div class="shop-group" v-for="(shop, indx) in shop_new" :key="indx" @click="goShop(shop.id)">
-            <div class="shop">
-              <div class="shop-info">
-                <label>1. </label>
-                <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
-                  <div class="shop-image">
-                    <img :src="'/'+shop.profile_photo">
-                  </div>
-                  <div style="font-size: 10px; display: flex; flex-direction: column; gap: 2px;">
-                    <label style="font-size: 14px;">{{ shop.name }}</label>
-                    <label style="font-weight: bolder;">{{ shop.overall_rate }} ({{ shop.reviews.filter(review => review.review_type === 'shop').length }} reviews/s)</label>
-                    <label>{{ shop.address }}</label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="shop-button">
-                <img src="../../../images/location.png" @click.stop="goLocation(parseFloat(shop.latitude), parseFloat(shop.longitude))">
-                <img src="../../../images/send.png" @click.stop="goMessage(shop.user_id)">
-              </div>
-              
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -274,6 +181,18 @@ export default {
     }
   },
   methods: {
+    
+    returnColorStatus(status) {
+
+      if(status === 'Out of Stock') {
+
+        return 'red';
+      }
+      else {
+
+        return 'green';
+      }
+    },
     async goProduct(product){
 
       this.store.setSelectedProduct(product);
@@ -618,13 +537,15 @@ export default {
 .item-comment{
   color: gray;
   font-size: 12px;
-  text-decoration: underline;
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+
 }
 .item-rate{
   display: flex;
   flex-direction: row;
   gap: 2px;
   align-items: center;
+  justify-content: space-between;
 }
 .item-rate label{
   font-size: 14px;

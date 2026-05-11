@@ -131,6 +131,8 @@ export default {
             return this.$route.name === 'ViewNotification';
         },
         filteredNotifications() {
+
+            
             if (this.currentFilter === 'all') {
                 return this.notifications;
             } else if (this.currentFilter === 'unread') {

@@ -32,6 +32,8 @@ import ViewAllNotification from "../buyer/pages/ViewAllNotification.vue";
 import ViewProduct from "../seller/notifications/ViewProduct.vue";
 import TransactionRecord from "../seller/pages/TransactionRecord.vue";
 import AddRecord from "../seller/pages/AddRecord.vue";
+import ListAddToCart from "../buyer/pages/ListAddToCart.vue";
+import Order from "../seller/pages/Order.vue";
 
 //ADMIN SIDE
 import AdminDashboard from "../admin/pages/AdminDashboard.vue";
@@ -41,8 +43,24 @@ import Admin_viewProduct from "../admin/pages/Admin_viewProduct.vue";
 import ManageReviews from "../admin/pages/ManageReviews.vue";
 import AdminMap from "../admin/pages/AdminMap.vue";
 import AdminNotificationPage from "../admin/pages/AdminNotificationPage.vue";
+import VerifyAccount from "../admin/pages/VerifyAccount.vue";
 
 const routes = [
+    {
+        path: "/admin/verify-lists",
+        name: "VerifyAccount",
+        component: VerifyAccount
+    },
+    {
+        path: "/seller/order-list",
+        name: "Order",
+        component: Order
+    },
+    {
+        path: "/buyer/list/add-to-cart",
+        name: "ListAddToCart",
+        component: ListAddToCart
+    },
     {
         path: "/admin/notifications",
         name: "AdminNotificationPage",

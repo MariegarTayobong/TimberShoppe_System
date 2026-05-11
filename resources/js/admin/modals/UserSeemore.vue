@@ -49,7 +49,6 @@
       <div class="info-section">
         <div style="display: flex; flex-direction: row; align-items: center; gap: 30px;">
           <h4>👤 Personal Information</h4>
-          <span class="material-icons close-icon" style="padding: 5px; border: 1px solid #c0673e; border-radius: 50%;" @click="this.$emit('goEdit', 'p_info')">edit</span>
         </div>
         <div class="info-grid">
           <div><strong>Age:</strong> {{ user.age }}</div>
@@ -66,9 +65,7 @@
       <!-- Shop Info -->
       <div v-if="user.shop" class="shop-section">
         <div style="display: flex; flex-direction: row; align-items: center; gap: 30px;">
-          <h4>🛍️ Shop Information</h4>
-          <span class="material-icons close-icon" style="padding: 5px; border: 1px solid #c0673e; border-radius: 50%;" @click="this.$emit('goEdit', 's_info')">edit</span>
-        </div>
+          <h4>🛍️ Shop Information</h4>        </div>
         <div class="shop-info">
           <img
             :src="`/${user.shop.profile_photo}` || '/default-shop.png'"
@@ -86,30 +83,10 @@
         </div>
       </div>
 
-      <!-- PRODUCT Reviews -->
-      <div v-if="user.shop && user.shop.reviews && user.shop.reviews.length" class="reviews-section">
-        <h4>⭐ Customer Product Reviews ({{ filterShopReviews.length }})</h4>
-        <div
-          v-for="(review, i) in filterProductReviews"
-          :key="i"
-          class="review-card"
-        >
-          <p class="review-comment">"{{ review.comment }}"</p>
-          <p class="review-meta">- {{ review.reviewer_name }} ({{ review.rate }}★)</p>
-        </div>
-      </div>
+      
 
-      <!-- SHOP Reviews -->
-      <div v-if="user.shop && user.shop.reviews && user.shop.reviews.length" class="reviews-section">
-        <h4>⭐ Customer Shop Reviews ({{ filterShopReviews.length }})</h4>
-        <div
-          v-for="(review, i) in filterShopReviews"
-          :key="i"
-          class="review-card"
-        >
-          <p class="review-meta">- {{ review.reviewer_name }} ({{ review.rate }}★)</p>
-        </div>
-      </div>
+      
+      
     </div>
 
 
@@ -145,7 +122,6 @@
       <div class="info-section">
         <div style="display: flex; flex-direction: row; align-items: center; gap: 30px;">
           <h4>👤 Personal Information</h4>
-          <span class="material-icons close-icon" style="padding: 5px; border: 1px solid #c0673e; border-radius: 50%;" @click="this.$emit('goEdit', 'p_info')">edit</span>
         </div>
         <div class="info-grid">
           <div><strong>Age:</strong> {{ user.age }}</div>
@@ -159,26 +135,8 @@
         </div>
       </div>
       <div v-if="user.reviews && user.reviews.length > 0" class="reviews-section">
-        <h4>⭐ Product Reviews ({{ filterBuyer_productReviews.length }})</h4>
-        <div
-          v-for="(review, i) in filterBuyer_productReviews"
-          :key="i"
-          class="review-card"
-        >
-          <p class="review-comment">"{{ review.comment }}"</p>
-          <p class="review-meta">- {{ review.reviewer_name }} ({{ review.rate }}★)</p>
-        </div>
-      </div>
-      <!-- SHOP Reviews -->
-      <div v-if="user.reviews && user.reviews.length > 0" class="reviews-section">
-        <h4>⭐ Shop Reviews ({{ filterBuyer_shopReviews.length }})</h4>
-        <div
-          v-for="(review, i) in filterBuyer_shopReviews"
-          :key="i"
-          class="review-card"
-        >
-          <p class="review-meta">- {{ review.reviewer_name }} ({{ review.rate }}★)</p>
-        </div>
+        
+     
       </div>
     </div>
   </div>

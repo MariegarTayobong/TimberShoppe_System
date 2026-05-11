@@ -1,5 +1,41 @@
 <template>
   <div class="dashboard-container">
+
+    <!-- PRODUCT LIST MODAL -->
+    <div v-if="show" class="modal-overlay" @click.self="show = false">
+      <div class="modal-container">
+        <h2 class="title">Product List</h2>
+
+        <!-- Search Bar -->
+        <input
+          type="text"
+          v-model="search"
+          placeholder="Search product..."
+          class="search-input"
+        />
+
+        <!-- Table -->
+        <table class="product-table">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+            </tr>
+          </thead>
+
+          <tbody v-if="filteredProducts.length > 0">
+            <tr v-for="item in filteredProducts" :key="item.id">
+              <td>{{ item.name }}</td>
+            </tr>
+          </tbody>
+          <tbody v-else>
+            <tr>
+              <td colspan="1">No products found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <h1>WELCOME ADMIN</h1>
 
     <div class="dashboard-content">
@@ -35,19 +71,15 @@
           </div>
 
           <!-- PRODUCTS CARD -->
-          <div class="card product-card">
-            <div class="product-item">
-              <div class="icon"><img src="../../../images/products.png" /></div>
-              <span>{{ data.products.total }} TOTAL PRODUCTS</span>
-            </div>
-            <div class="product-item">
-              <div class="icon"><img src="../../../images/block.png" /></div>
-              <span>{{ data.products.blocked }} BLOCKED PRODUCTS</span>
-            </div>
+          <div class="card product-card" @click="show = true" style="cursor: pointer;">
+            <div class="icon"><img src="../../../images/products.png" /></div>
+            <h2>{{ data.products.unique }}</h2>
+            <p>TOTAL PRODUCTS</p>
           </div>
+
         </div>
 
-        <!-- TABLE SECTION -->
+        <!-- USER TABLE SECTION -->
         <div class="table-container">
           <div class="table-header">
             <input type="search" placeholder="🔍 Search user by username" v-model="search_text_user"/>
@@ -64,12 +96,15 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="user of filteredUsers" :key="user">
+                <tr v-for="user of filteredUsers" :key="user.id">
                   <td>{{ user.name }}</td>
                   <td>{{ user.role }}</td>
                   <td>{{ user.firstname }} {{ user.lastname }}</td>
                   <td>{{ user.is_deactivate === 0 ? 'Active' : 'Blocked' }}</td>
                   <td>{{ returnFormatDate(user.created_at) }}</td>
+                </tr>
+                <tr v-if="filteredUsers.length === 0">
+                  <td colspan="5">No users found.</td>
                 </tr>
               </tbody>
             </table>
@@ -77,7 +112,7 @@
         </div>
       </div>
 
-      <!-- RIGHT SIDE -->
+      <!-- RIGHT SIDE NOTIFICATIONS -->
       <div class="right-side">
         <div class="notif-header">
           <h3>NOTIFICATIONS</h3>
@@ -85,13 +120,12 @@
         </div>
 
         <div class="notif-content" v-if="notifs_list.length > 0">
-
           <div style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
             <span 
-            v-for="notif of notifs_list" 
-            :key="notif" 
-            style="width: 100%; padding: 5px; border-radius: 5px; display: flex; flex-direction: row; justify-content: space-between;"
-            :class="{is_seen: notif.seen === 0}"
+              v-for="notif of notifs_list" 
+              :key="notif.id" 
+              style="width: 100%; padding: 5px; border-radius: 5px; display: flex; flex-direction: row; justify-content: space-between;"
+              :class="{is_seen: notif.seen === 0}"
             >
               <label>{{ notif.text }} - <strong>{{ notif.users.name }}</strong></label>
               <label>{{ returnFormatDate(notif.created_at) }}</label>
@@ -111,110 +145,156 @@
 import axios from 'axios';
 
 export default {
-
-  data(){
-    return{
+  data() {
+    return {
+      search: '',
+      show: false,
       users_list: [],
       notifs_list: [],
       search_text_user: '',
+      products: [],
+      unique_products: [],
       data: {
-        'users': {
-          'sellers': 0,
-          'buyers': 0,
-          'total': 0,
-          'deactivate': 0,
+        users: {
+          sellers: 0,
+          buyers: 0,
+          total: 0,
+          deactivate: 0,
         },
-        'products': {
-          'total': 0,
-          'blocked': 0
+        products: {
+          total: 0,
+          unique: 0,
+          blocked: 0
         },
-        'notif': []
+        notif: []
       },
+      selected_products: '',
     }
   },
   computed: {
+    filteredUsers() {
+      if (!this.users_list || this.users_list.length === 0) return [];
+      if (!this.search_text_user) return this.users_list;
 
-    filteredUsers(){
+      const searchLower = this.search_text_user.toLowerCase();
+      return this.users_list.filter(user =>
+        user.name.toLowerCase().includes(searchLower)
+      );
+    },
+    filteredProducts() {
+      if (!this.unique_products || this.unique_products.length === 0) return [];
+      if (!this.search) return this.unique_products;
 
-      if(this.users_list && this.users_list.length > 0){
-
-        return this.users_list.filter(user => user.name.includes(this.search_text_user));
-      }
+      const searchLower = this.search.toLowerCase();
+      return this.unique_products.filter(p =>
+        p.name.toLowerCase().includes(searchLower)
+      );
     }
   },
-
   methods: {
-
-    returnFormatDate(d){
-
+    returnFormatDate(d) {
       const date = new Date(d);
-
       return `${date.toLocaleDateString()} - ${date.toLocaleTimeString()}`;
     },
 
-    process_data(data){
+    process_data(data) {
+      console.log('data: ', data);
 
-        console.log('data: ', data);
+      if (!data) {
+        console.log('no data');
+        return;
+      }
 
-        if(!data){
-          console.log('no data');
-          return;
-        }
+      this.data.products.unique = data.unique_products;
+      this.notifs_list = data.notif;
 
-        this.notifs_list = data.notif;
+      // Process users
+      data.users.forEach(user => {
+        this.users_list.push(user);
+        this.data.users.total++;
+        if (user.role === 'seller') this.data.users.sellers++;
+        else this.data.users.buyers++;
+        if (user.is_deactivate === 1) this.data.users.deactivate++;
+      });
 
-        //for users
-        data.users.forEach(user => {
+      // Process products
+      data.products.forEach(product => {
+        this.data.products.total++;
+        if (product.is_blocked === 1) this.data.products.blocked++;
+      });
 
-            this.users_list.push(user);
-
-            this.data.users.total++;
-
-            if(user.role === 'seller'){
-              this.data.users.sellers++;
-            }
-            else{
-              this.data.users.buyers++;
-            }
-
-            if(user.is_deactivate === 1){
-              this.data.users.deactivate++;
-            }
-        });
-
-        //for products
-        data.products.forEach(product => {
-
-            this.data.products.total++;
-            if(product.is_blocked === 1){
-              this.data.products.blocked++;
-            }
-        });
-
-        console.log('this data: ', this.data);
+      console.log('this data: ', this.data);
     },
 
-    async returnData(){
-
+    async returnData() {
       const res = await axios.get('/admin/return-data/dashboard');
-
       console.log(res.data.message);
-
       this.process_data(res.data.data);
-    }
+      this.unique_products = res.data.data.unique_p;
+    },
   },
-
-  async mounted(){
-
+  async mounted() {
     await this.returnData();
   }
 };
 </script>
 
+
 <style scoped>
-.is_seen{
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-container {
+  background: white;
+  width: 600px;
+  max-height: 80vh;
+  padding: 20px;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.title {
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-table th,
+.product-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+
+.product-table th {
+  background: #f2f2f2;
+}
+
+/* Highlight unseen notifications */
+.is_seen {
   background-color: #007bff67;
 }
+
 /* LAYOUT */
 .dashboard-container {
   width: 100%;
@@ -331,7 +411,7 @@ h1 {
   padding: 5px 0;
 }
 
-/* DEACTIVATED */
+/* DEACTIVATED CARD */
 .deactivated-card {
   text-align: center;
   font-weight: bold;
@@ -343,12 +423,14 @@ h1 {
   margin: 10px 0 0 0;
 }
 
-/* PRODUCTS */
+/* PRODUCTS CARD */
 .product-card {
-  display: flex;
-  flex-direction: column;
+  text-align: center;
+  font-weight: bold;
+  color: #4f7fd9;
 }
 
+/* PRODUCT ITEM */
 .product-item {
   border-bottom: 1px solid #ddd;
   padding: 8px 0;

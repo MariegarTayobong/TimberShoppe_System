@@ -23,7 +23,7 @@
 
                     <div style="display: flex; flex-direction: row; gap: 8px; align-items: center;">
                         <div style="width: 15px; height: 15px; border-radius: 15px; background-color: green;" v-if="chat[1].is_active === 1"></div>
-                        <label style="font-size: 12px; margin: 0;">Active {{ (chat[1].is_active === 1 ? "now" : returnFormatActivedTime(chat[1].time_logout)) }}</label>
+                        <label style="font-size: 12px; margin: 0;">{{ (chat[1].is_active === 1 ? "Active now" : 'Offline') }}</label>
                     </div>
                 </div>
             </div>
@@ -77,32 +77,28 @@ export default {
             return message;
         },
         returnFormatActivedTime(datetime) {
-            if(!datetime){
-                return "";
-            }
-      const current = new Date();
-      const time = new Date(datetime);
 
-      const diffInMs = current - time;
-      const diffInSeconds = Math.floor(diffInMs / 1000);
+            const current = new Date();
 
-      if (diffInSeconds < 60) {
-        return `${diffInSeconds} seconds ago`;
-      }
+            let time = new Date(datetime.replace(" ", "T"));
 
-      const diffInMinutes = Math.floor(diffInSeconds / 60);
-      if (diffInMinutes < 60) {
-        return `${diffInMinutes} minutes ago`;
-      }
+            time = new Date(time.getTime() - 24 * 60 * 60 * 1000);
 
-      const diffInHours = Math.floor(diffInMinutes / 60);
-      if (diffInHours < 24) {
-        return `${diffInHours} hours ago`;
-      }
+            let diffInMs = current - time;
+            diffInMs = Math.max(0, diffInMs);
 
-      const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays} days ago`;
-    },
+            const diffInSeconds = Math.floor(diffInMs / 1000);
+            if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours} hours ago`;
+
+            const diffInDays = Math.floor(diffInHours / 24);
+            return `${diffInDays} days ago`;
+        },
         returnFormatDate(date){
 
 

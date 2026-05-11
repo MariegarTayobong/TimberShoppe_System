@@ -2,6 +2,8 @@
   <div class="manage-account-container">
     <h1>🔔 Notifications</h1>
 
+    <MessageNotify :message="message" :title="title" @closed="closed"/>
+
     <!-- Top Actions -->
     <div class="notif-actions">
       <button class="mark-all" @click="markAllRead">Mark All as Read</button>
@@ -43,13 +45,25 @@
 <script>
 import axios from 'axios';
 
+import MessageNotify from '../modals/MessageNotify.vue';
+
 export default {
+  components: {MessageNotify},
   data() {
     return {
       notifications: [],
+      message: '',
+      title: '',
+
     };
   },
   methods: {
+
+    closed(){
+
+      this.message = '';
+      this.title = "";
+    },
     async markAllRead() {
 
         const res = await axios.post('/admin/mark-all-read/notif');
@@ -57,7 +71,9 @@ export default {
         console.log(res.data.message);
         if(res.data.message === 'success'){
 
-            window.alert(res.data.message);
+            this.title = "MARK ALL READ";
+            this.message = "YOU SUCCESSFULLY MARK ALL READ THE NOTIFICATIONS";  
+
             this.notifications.forEach((n) => (n.seen = 1));
         }
     },
@@ -67,8 +83,9 @@ export default {
         console.log(res.data.message);
         
         if(res.data.message === 'success'){
-
-            window.alert(res.data.message);
+          
+            this.title = "DELETE NOTIFICATION";
+            this.message = "YOU SUCCESSFULLY DELETED ALL NOTIFICATION";
             this.notifications = [];
         }
     },
@@ -98,7 +115,9 @@ export default {
         if(res.data.message === 'success'){
 
             this.notifications.splice(index, 1);
-            window.alert(res.data.message);
+
+            this.title = "DELETE NOTIFICATION";
+            this.message = "YOU SUCCESSFULLY DELETED A NOTIFICATION";
         }
     }
   },

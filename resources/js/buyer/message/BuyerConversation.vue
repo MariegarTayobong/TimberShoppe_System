@@ -29,7 +29,7 @@
           <div class="shop-name">{{ shop_info.shop.name }}</div>
           <div class="last-active">
             <div style="width: 7px; height: 7px; border-radius: 12px; background-color: green;" v-if="shop_info.is_active === 1"></div>
-            <label>Active {{ (shop_info.is_active === 1 ? "now" : returnFormatActivedTime(shop_info.time_logout)) }}</label>
+            <label>{{ (shop_info.is_active === 1 ? "Active now" : 'Offline  ') }}</label>
           </div>
         </div>
       </div>
@@ -155,26 +155,25 @@ export default{
     }
   },
   methods: {
-      returnFormatActivedTime(datetime) {
+    returnFormatActivedTime(datetime) {
+
         const current = new Date();
-        const time = new Date(datetime);
 
-        const diffInMs = current - time;
+        let time = new Date(datetime.replace(" ", "T"));
+
+        time = new Date(time.getTime() - 24 * 60 * 60 * 1000);
+
+        let diffInMs = current - time;
+        diffInMs = Math.max(0, diffInMs);
+
         const diffInSeconds = Math.floor(diffInMs / 1000);
-
-        if (diffInSeconds < 60) {
-          return `${diffInSeconds} seconds ago`;
-        }
+        if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
 
         const diffInMinutes = Math.floor(diffInSeconds / 60);
-        if (diffInMinutes < 60) {
-          return `${diffInMinutes} minutes ago`;
-        }
+        if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
 
         const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) {
-          return `${diffInHours} hours ago`;
-        }
+        if (diffInHours < 24) return `${diffInHours} hours ago`;
 
         const diffInDays = Math.floor(diffInHours / 24);
         return `${diffInDays} days ago`;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\MessageEvent;
 use App\Events\NotifyEvent;
 use App\Events\SellerNotifyEvent;
+use App\Models\Addtocart;
 use App\Models\Follower;
 use App\Models\Message;
 use App\Models\Notification;
@@ -25,6 +26,237 @@ use PDO;
 
 class BuyerController extends Controller
 {
+
+    public function checkout_added_cart(Request $req) {
+
+        try{
+
+            $cart = Addtocart::where('product_id', $req->product_id)
+                             ->where('buyer_id', $req->buyer_id)
+                             ->where('action', 'add-to-cart')
+                             ->first();
+            
+            if($cart) {
+
+                $cart->action = "checkout";
+                $cart->status = "Delivery Processing";
+                $cart->receive_method = $req->method;
+                $cart->delivery_loc = $req->address;
+                $cart->save();
+            }
+            else{
+
+                return response()->json(['message' => 'not found']);
+            }
+
+            return response()->json(['message' => 'successful']);
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
+    public function returnCheckedout(Request $req) {
+
+        try{
+
+            $checkedout = Addtocart::where('buyer_id', $req->id)
+                                   ->where('action', 'checkout')
+                                   ->where('status', 'Delivery Processing')
+                                   ->get();
+            
+            $added_cart = Addtocart::where('buyer_id', $req->id)
+                                   ->where('action', 'add-to-cart')
+                                   ->get();
+
+            return response()->json(['checkout' => $checkedout, 'added_cart' => $added_cart]);         
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
+    public function direct_checkout(Request $req) {
+
+        try{
+
+            $addtocart = Addtocart::where('product_id', $req->product_id)
+                                  ->where('action', 'checkout')
+                                  ->where('buyer_id', $req->buyer_id)
+                                  ->where('status', 'Delivery Processing')
+                                  ->first();
+
+            if($addtocart) {
+
+                $q = $addtocart->quantity;
+                $addtocart->quantity = $q + $req->quantity;
+                $addtocart->save();
+
+                return response()->json(['message' => 'successful']);
+            }
+
+            Log::info('status: ', ['status' => 'neh agi']);
+            $addtocart = new Addtocart();
+
+            $addtocart->buyer_id = $req->buyer_id;
+            $addtocart->seller_id = $req->seller_id;
+            $addtocart->product_id = $req->product_id;
+            $addtocart->quantity = $req->quantity;
+            $addtocart->receive_method = $req->method;
+            $addtocart->delivery_loc = $req->address;
+            $addtocart->action = "checkout";
+            $addtocart->status = "Delivery Processing";
+
+            if($addtocart->save()){
+
+                return response()->json(['message' => 'successful']);
+            }
+
+            return response()->json(['message' => 'something went wrong']);
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
+    public function delete_cart(Request $req) {
+
+        try {
+
+            $cart = Addtocart::where('id', $req->id)->first();
+
+            if($cart) {
+
+                $cart->delete();
+                return response()->json(['message' => 'successful']);
+            }
+
+            return response()->json(['message' => 'empty']);
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
+    public function checkout_buyer(Request $req) {
+
+        try{
+
+            $seller_id = $req->seller_id;
+            $buyer_id = $req->buyer_id;
+            $product_id = $req->product_id;
+
+            $data = json_decode($req->data);
+
+            Log::info('data', ['data' => $data]);
+
+            if(count($data) > 0){
+
+                foreach($data as $id) {
+
+                    $record = Addtocart::where('id', $id)->first();
+
+                    if($record) {   
+
+                        $record->action = "checkout";
+                        $record->status = "Delivery Processing";
+                        $record->receive_method = $req->method;
+                        $record->delivery_loc = $req->address;
+
+                        if($record->save()) {
+
+                            continue;
+                        }
+                        else{
+
+                            Log::info('message', ['message' => $record]);
+                            return response()->json(['message' => 'error']);
+                        }
+                    }
+                }
+
+                $notif = new Notification();
+                $message = $notif->addNotification('checkout', $buyer_id, $product_id, $seller_id, null, null);
+                return response()->json(['message' => 'successful']);
+            }
+
+            return response()->json(['message' => 'no data']);
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
+    public function buyer_return_addtocart(Request $req){
+
+        try{
+
+            $addtc = new Addtocart();
+
+            $data = $addtc->with(['product.photos', 'product.shop', 'product.shop.user', 'product.reviews', 'product.records', 'product', 'seller', 'buyer'])
+                          ->where('buyer_id', '=', $req->id)
+                          ->where('action', '=', 'add-to-cart')
+                          ->orderBy('created_at', 'desc')
+                          ->get();
+
+            $order_items = $addtc->with(['product.photos', 'product.shop', 'product.shop.user', 'product.reviews', 'product.records', 'product', 'seller', 'buyer'])
+                          ->where('buyer_id', '=', $req->id)
+                          ->where('action', '=', 'checkout')
+                          ->orderBy('created_at', 'desc')
+                          ->get();
+
+            return response()->json(['message' => $data, 'order-items' => $order_items]);
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
+    public function buyer_addtocart(Request $req){
+        try{
+
+            $addtocart = Addtocart::where('product_id', $req->product_id)
+                                  ->where('buyer_id', $req->buyer_id)
+                                  ->where('action', 'add-to-cart')
+                                  ->first();
+
+            if($addtocart) {
+
+                $q = $addtocart->quantity;
+                $addtocart->quantity = $q + $req->quantity;
+                $addtocart->save();
+
+                return response()->json(['message' => 'successful']);
+            }
+
+            Log::info('status: ', ['status' => 'neh agi']);
+            $addtocart = new Addtocart();
+
+            $addtocart->buyer_id = $req->buyer_id;
+            $addtocart->seller_id = $req->seller_id;
+            $addtocart->product_id = $req->product_id;
+            $addtocart->quantity = $req->quantity;
+            $addtocart->action = 'add-to-cart';
+
+            if($addtocart->save()){
+
+                return response()->json(['message' => 'successful']);
+            }
+
+            return response()->json(['message' => 'something went wrong']);
+        }
+        catch(\Exception $er){
+
+            return response()->json(['message' => $er->getMessage()]);
+        }
+    }
+
     public function searchShops(Request $request){
         try{
 
@@ -240,8 +472,11 @@ class BuyerController extends Controller
 
     public function returnShops(){
         try{
-            $shops = Shop::join('users', 'shops.user_id', '=', 'users.id')
-                         ->where('users.is_deactivate', 0)
+            $shops = Shop::with(['user'])
+                         ->whereHas('user', function ($q){
+
+                            $q->where('is_deactivate', 0);
+                         })
                          ->get();
 
             return response()->json(['shops'=>$shops]);
@@ -258,6 +493,20 @@ class BuyerController extends Controller
             $new = Product::returnProducts('new');
 
             return response()->json(['popular' => $popular, 'new'=>$new]);
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex]);
+        }
+    }
+
+    public function buyer_searchProduct_byname(Request $req){
+
+        try{
+        
+            $products = Product::with(['photos','shop', 'shop.user', 'records', 'reviews'])
+                               ->where('name', 'like', "%$req->name%")->get();
+
+            return response()->json(['products' => $products]);
         }
         catch(\Exception $ex){
             return response()->json(['message'=>$ex]);
@@ -580,6 +829,7 @@ class BuyerController extends Controller
             $user->birthday = $info->birthday;
             $user->contact_no = $info->contact_no;
             $user->nearby_km = $info->nearby_km;
+            $user->current_address = $info->current_address;
 
             if($user->save()){
 

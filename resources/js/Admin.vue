@@ -2,6 +2,8 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <div class="main-container" v-if="admin_info">
 
+    <MessageNotify :message="message" :title="title" @closed="closed"/>
+
     <teleport to="body">
         <AdminProfile @close="close" @save="save" :admin="admin_info" v-if="show_profile_modal"/>
     </teleport>
@@ -34,13 +36,19 @@
                 <label>MANAGE ACCOUNT</label>
             </router-link>
             <!--FEEDBACK MANAGE-->
-            <router-link to="/admin/manage-reviews" @click="current_page = 'MANAGE FEEDBACK'">
+            <!-- <router-link to="/admin/manage-products" @click="current_page = 'MANAGE PRODUCTS'">
                 <span class="material-icons">
                     feedback
                 </span>
-                <label>MANAGE FEEDBACK</label>
-            </router-link>
+                <label>MANAGE PRODUCTS</label>
+            </router-link> -->
             <!--MAP-->
+            <router-link to="/admin/verify-lists" @click="current_page = 'VERIFICATION'">
+                <span class="material-icons">
+                    task_alt
+                </span>
+                <label>VERIFICATION</label>
+            </router-link>
             <router-link to="/admin/map" @click="current_page = 'MAP'">
                 <span class="material-icons">
                     map
@@ -61,9 +69,7 @@
                 </div>
             </div>
             <div class="h">
-                <span class="material-icons icon" @click="show_notif = !show_notif; show_profile_modal = false;">
-                    notifications
-                </span>
+                <img src="../images/notification (1).png" style="cursor: pointer; width: 30px; height: 30px;" @click="show_notif = !show_notif; show_profile_modal = false;">
                 <div class="profile-circle" style="cursor: pointer;" @click="show_profile_modal = true; show_notif = false;">
                     <img :src="'/'+admin_info.path" style="width: 100%; height: 100%; position: relative;">
                 </div>
@@ -82,9 +88,10 @@ import axios from 'axios';
 
 import AdminProfile from './admin/pages/AdminProfile.vue';
 import AdminNotification from './admin/modals/AdminNotification.vue';
+import MessageNotify from './admin/modals/MessageNotify.vue';
 
 export default {
-    components: {AdminProfile, AdminNotification},
+    components: {AdminProfile, AdminNotification, MessageNotify},
     data() {
         return{
             show_notif: false,
@@ -94,6 +101,8 @@ export default {
             admin_info: null,
             show_profile_modal: false,
             notifications: [],
+            message: '',
+            title: '',
         }
     },
     methods: {
@@ -102,8 +111,16 @@ export default {
             this.show_profile_modal = false;
         },
 
+        closed() {
+            this.message = '';
+            this.title = '';
+        },
+
         save(info){
             
+            this.message = "YOU SUCCESSFULLY UPDATE YOUR INFO";
+            this.title = "UPDATE PROFILE";
+
             this.admin_info = info;
         },
 

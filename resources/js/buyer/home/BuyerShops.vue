@@ -1,29 +1,12 @@
 <template>
   <div class="buyer-browse-maincontainer">
     <div style="padding: 20px;" class="back-header">
-        <img src="../../../images/left-arrows.png" style="width: 30px; height: 30px; cursor: pointer" @click="goPrevious">
+        <img src="../../../images/left-arrows.png" class="back-btn"  @click="goPrevious">
         <label style="font-weight: bolder;">BROWSE</label>
     </div>
     <label style="font-weight: bolder; padding-left: 20px; padding-bottom: 10px;">{{ $route.params.name}}s</label>
     <div class="filter-search-browse">
         <form @submit.prevent="returnSearchShops">
-          <select v-model="search_info.category">
-              <option value="" disabled>Category</option>
-              <option value="Any">Any</option>
-              <option value="Furniture">Furniture</option>
-              <option value="Kitchenware">Kitchenware</option>
-              <option value="Musical Instrument">Musical Instrument</option>
-              <option value="Office Supplies">Office Supplies</option>
-              <option value="Toys and Games">Toys and Games</option>
-              <option value="Outdoor enhancements">Outdoor enhancements</option>
-              <option value="Personal accessories">Personal accessories</option>
-              <option value="Home Decor">Home Decor</option>
-          </select>
-          <select v-model="search_info.filter">
-              <option value="" disabled>Filter</option>
-              <option value="Popular">Popular</option>
-              <option value="New">New</option>
-          </select>
           <input placeholder="Search product name ..." v-model="search_text">
         </form>
         <img src="../../../images/cancel (1).png" style="width: 10px; height: 10px; margin-left: 5px;">
@@ -281,28 +264,9 @@ export default {
     align-items: center;
     gap: 5px;
 }
-.filter-search-browse select{
-    padding: 5px;
-    font-size: 10px;
-    width: 60px;
-    border: 1px solid #D25E27;
-}
-.filter-search-browse input{
-    padding: 4px;
-    font-size: 12px;
-    padding-left: 10px;
-    border: 1px solid #D25E27;
-    width: 100%;
-}
-.filter-search-browse{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding-left: 20px; padding-right: 20px; padding-top: 5px; padding-bottom: 5px;
-    gap: 5px;
-    border-bottom: 1px solid rgb(188, 188, 188);
-    padding-bottom: 20px;
-}
+
+
+
 .popular-text{
     font-size: 15px;
     font-weight: bolder;
@@ -313,7 +277,7 @@ export default {
     color: rgb(131, 131, 131);
 }
 .buyer-browse-maincontainer{
-    padding-top: 15%;
+    padding-top:15%;
     width: 100%;
     height: auto;
     position: relative;
@@ -327,5 +291,65 @@ export default {
     justify-content: space-between;
     padding: 20px;
     gap: 5px;
+}
+@media (min-width: 768px){
+  .buyer-browse-maincontainer {
+    margin: 100px auto;
+    margin-top: 70px;   /* top & bottom = 100px, centered horizontally */
+    padding: 0 20px;      /* prevents touching screen edges */
+    max-width: 92%;    /* keeps content neat */
+    box-sizing: border-box;
+  }
+  .filter-search-browse input{
+    padding: 4px;
+    font-size: 12px;
+    padding-left: 10px;
+    border: 1px solid #D25E27;
+    width: 60%;
+  }
+  .buyer-browse-content{
+    display: grid;
+    grid-template-columns: repeat(7, 8.5rem);
+    gap: 60px;
+    padding-left: 20px;
+  }
+  .back-header{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    font-size: 25px;
+  }
+  .back-btn{
+    width: 50px;
+    height: 50px;
+  }
+  .filter-search-browse select{
+      padding: 10px;
+      font-size: 15px;
+      width: 120px;
+      border: 1px solid #D25E27;
+  }
+  .filter-search-browse input{
+      padding: 10px;
+      font-size: 15px;
+      padding-left: 10px;
+      border: 1px solid #D25E27;
+      width: 100%;
+  }
+  .filter-search-browse{
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding-left: 20px; padding-right: 20px; padding-top: 5px; padding-bottom: 5px;
+      gap: 20px;
+      border-bottom: 1px solid rgb(188, 188, 188);
+      padding-bottom: 20px;
+  }
+  .header-title{
+    font-weight: bolder; padding-left: 20px; padding-bottom: 10px;
+    font-size: 20px;
+    margin-top: 30px;
+  }
 }
 </style>

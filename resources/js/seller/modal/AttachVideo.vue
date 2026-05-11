@@ -1,5 +1,5 @@
 <template>
-  <div class="attached-video-container" @click="$emit('exit_modal')">
+  /*<div class="attached-video-container" @click="$emit('exit_modal')">
     <div class="attached-modal" @click.stop>
       <!-- Header -->
       <div class="modal-header">

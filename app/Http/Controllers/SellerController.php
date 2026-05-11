@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\MessageEvent;
 use App\Events\NotifyEvent;
+use App\Models\Addtocart;
 use App\Models\Follower;
 use App\Models\Message;
 use App\Models\Notification;
@@ -13,6 +14,7 @@ use App\Models\Record;
 use App\Models\Review;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\Verifiedpending;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -34,6 +36,385 @@ use Illuminate\Support\Facades\Storage;
 
 class SellerController extends Controller
 {
+
+    public function seller_removeOrder(Request $req) {
+
+        try{
+
+            $order = Addtocart::where('id', $req->id)->first();
+
+            if($order) {
+
+                $order->delete();
+            }
+
+            return response()->json(['message' => 'successful']);
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
+    public function seller_itemDelivered(Request $req) {
+
+        try{
+
+            $record = Addtocart::where('id', $req->id)->first();
+            
+            if($record) {
+
+                $record->status = "Delivered";
+                $record->save();
+            }
+
+            $message = new Message();
+
+            $message->from_id = $req->seller_id;
+            $message->to_id = $req->buyer_id;
+            $message->messages = "Hi, you've purchase my product. Your review will be a big help for my store. Please click the view above.";
+            $message->mention = $req->product_id;
+            $message->seen = 0;
+            $message->seen_at = null;
+
+            $message->save();
+
+            $buyer = User::where('id', $req->buyer_id)->first();
+
+            if($buyer) {
+
+                broadcast(new MessageEvent($buyer->name));
+            }
+
+            $record = new Record();
+            $record->product_id = $req->product_id;
+            $record->user_id = $req->buyer_id;
+            $record->name = $buyer->name;
+            $record->description = $req->description;
+            $record->seller_id = $req->seller_id;
+
+            $record->save();
+
+            $shipped = Addtocart::with(['buyer', 'seller', 'product'])
+                                ->where('seller_id', $req->seller_id)
+                                ->where('action', 'checkout')
+                                ->where('status', '!=', 'Delivery Processing')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+
+            $pending = Addtocart::with(['buyer', 'seller', 'product'])
+                                ->where('seller_id', $req->seller_id)
+                                ->where('action', 'checkout')
+                                ->where('status', 'Delivery Processing')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+
+            return response()->json(['message' => 'successful', 'shipped' => $shipped, 'pending' => $pending]);
+            
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+
+    }
+
+    public function seller_goVerified(Request $req) {
+
+        try{
+
+            $selfie = $req->file('selfie');
+            // $proofAddress = $req->file('proofAddress');
+            $dti = $req->file('dti');
+            $businessPermit = $req->file('businessPermit');
+
+            if(
+                $selfie && $dti && $businessPermit
+            ) {
+
+                $selfie_filename = time() . "_" . $selfie->getClientOriginalName();
+                // $proofAddress_filename = time() . "_" . $proofAddress->getClientOriginalName();
+                $dti_filename = time() . "_" . $dti->getClientOriginalName();
+                $businessPermit_filename = time() . "_" . $businessPermit->getClientOriginalName();
+
+                $path_selfie = 'storage/uploads/' . $selfie_filename;
+                // $path_proofAddress = 'storage/uploads/' . $proofAddress_filename;
+                $path_dti = 'storage/uploads/' . $dti_filename;
+                $path_businessPermit = 'storage/uploads/' . $businessPermit_filename;
+
+                //store image
+                $selfie->storeAs('public/uploads', $selfie_filename);
+                // $proofAddress->storeAs('public/uploads', $proofAddress_filename);
+                $dti->storeAs('public/uploads', $dti_filename);
+                $businessPermit->storeAs('public/uploads', $businessPermit_filename);
+
+                $obj_img = new Verifiedpending();
+                $obj_img->seller_id = $req->id;
+                $obj_img->validID_type = $req->validID;
+                $obj_img->selfie_pic = $path_selfie;
+                // $obj_img->birth_cert_pic = $path_proofAddress;
+                $obj_img->dti_pic = $path_dti;
+                $obj_img->business_permit = $path_businessPermit;
+
+                if($obj_img->save()) {
+
+                    $shop = Shop::where('user_id', $req->id)->first();
+
+                    if(!$shop) {
+
+                         return response()->json(['message' => 'empty']);
+                    }
+
+                    $shop->is_verified = "pending";
+
+                    if($shop->save()){
+
+                        $notif = new Notification();
+                        $seller = User::where('id', $req->id)->first();
+
+                        $notif->to_admin = 1;
+                        $notif->from_id = $req->id;
+                        $notif->text = "Seller $seller->name requesting for account verification.";
+                        $notif->seen = 0;
+                        $notif->type = 'verification';
+                        $notif->favorite = 0;
+
+                        $notif->save();
+
+                        return response()->json(['message' => 'successful']);
+                    }
+
+                    return response()->json(['message' => 'not saved']);
+                }
+            }
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
+    public function seller_cancelOrder(Request $req) {
+
+        try{
+
+            $seller_id = $req->id;
+            $data = json_decode($req->data);
+            $id_data = json_decode($req->id_data);
+
+            Log::info('data', ['data' => $data]);
+
+            if(count($data) > 0){
+
+                foreach($data as $id) {
+
+                    $record = Addtocart::where('id', $id)->first();
+
+                    if($record) {
+
+                        $record->action = "checkout";
+                        $record->status = "Canceled";
+
+                        if($record->save()) {
+
+                            continue;
+                        }
+                        else{
+
+                            Log::info('message', ['message' => $record]);
+                            return response()->json(['message' => 'error']);
+                        }
+                    }
+                }
+
+                $shipped = Addtocart::with(['buyer', 'seller', 'product'])
+                                ->where('seller_id', $req->id)
+                                ->where('action', 'checkout')
+                                ->where('status', '!=', 'Delivery Processing')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+
+                $pending = Addtocart::with(['buyer', 'seller', 'product'])
+                                    ->where('seller_id', $req->id)
+                                    ->where('action', 'checkout')
+                                    ->where('status', 'Delivery Processing')
+                                    ->orderBy('created_at', 'desc')
+                                ->get();
+
+                $notif = new Notification();
+                $message = $notif->addNotification('cancel delivered', $seller_id, $id_data->product_id, $id_data->buyer_id, null, null);
+                
+                return response()->json(['message' => 'successful', 'shipped' => $shipped, 'pending' => $pending]);
+            }
+
+            return response()->json(['message' => 'error']);
+            
+        }   
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
+    public function seller_shipOrder(Request $req) {
+
+        try{
+
+            $seller_id = $req->id;
+            $data = json_decode($req->data);
+            $id_data = json_decode($req->id_data);
+            $buyer_id = $id_data->buyer_id;
+            $product_id = $id_data->product_id;
+
+            Log::info('data', ['data' => $data]);
+
+            if(count($data) > 0){
+
+                foreach($data as $id) {
+
+                    $record = Addtocart::where('id', $id)->first();
+
+                    if($record) {
+
+                        $product = Product::where('id', $record->product_id)->first();
+
+                        if($product) {
+                            $q = $product->quantity;
+
+                            $difference =  $q - $record->quantity;
+
+                            if($difference < 0) {
+
+                                $difference = 0;
+                            }
+
+                            $product->quantity = $difference;
+
+                            if($difference === 0) {
+
+                                $product->status = "Out of Stock";
+                            }
+                            $product->save();
+                        }
+
+                        $record->action = "checkout";
+                        $record->status = "Shipped";
+
+                        if($record->save()) {
+
+                            continue;
+                        }
+                        else{
+
+                            Log::info('message', ['message' => $record]);
+                            return response()->json(['message' => 'error']);
+                        }
+                    }
+                }
+
+                $receiver = User::where('id', $buyer_id)->first();
+
+                if($receiver) {
+
+                    $message = new Message();
+
+                    $message->from_id = $seller_id;
+                    $message->to_id = $buyer_id;
+                    $message->messages = "Hi $receiver->firstname $receiver->lastname. I already fulfilled your order/s. Let's contact each other for smooth transaction. Thank you!";
+                    $message->mention = $product_id;
+                    $message->seen = 0;
+                    $message->seen_at = null;
+
+                    if($message->save()) {
+
+                        broadcast(new MessageEvent($receiver->name));
+                    }
+                }
+
+                $shipped = Addtocart::with(['buyer', 'seller', 'product'])
+                                ->where('seller_id', $req->id)
+                                ->where('action', 'checkout')
+                                ->where('status', '!=', 'Delivery Processing')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+
+                $pending = Addtocart::with(['buyer', 'seller', 'product'])
+                                    ->where('seller_id', $req->id)
+                                    ->where('action', 'checkout')
+                                    ->where('status', 'Delivery Processing')
+                                    ->orderBy('created_at', 'desc')
+                                ->get();
+
+
+                $notif = new Notification();
+                $message = $notif->addNotification('delivered', $seller_id, $product_id, $buyer_id, null, null);
+                
+                return response()->json(['message' => 'successful', 'shipped' => $shipped, 'pending' => $pending]);
+            }
+
+            return response()->json(['message' => 'error']);
+            
+        }   
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
+    public function seller_return_orders(Request $req) {
+
+        try{
+
+            Log::info('m', ['m' => 'neh agi']);
+
+            $shop = Shop::where('user_id', $req->id)->first();
+            
+            $shipped = Addtocart::with(['buyer', 'seller', 'product'])
+                                ->where('seller_id', $req->id)
+                                ->where('action', 'checkout')
+                                ->where('status', '!=', 'Delivery Processing')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+
+            $pending = Addtocart::with(['buyer', 'seller', 'product'])
+                                ->where('seller_id', $req->id)
+                                ->where('action', 'checkout')
+                                ->where('status', 'Delivery Processing')
+                                ->orderBy('created_at', 'desc')
+                                ->get();
+            
+            $products = Product::where('shop_id', $shop->id)->get();
+
+            return response()->json(['shipped_orders' => $shipped, 'pending_orders' => $pending, 'products' => $products]);
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
+    public function seller_change_location(Request $req){
+
+        try{
+
+            $coords = json_decode($req->coords);
+
+            $shop = Shop::where('id', $req->shop_id)->first();
+
+            if(!$shop){
+
+                return response()->json(['message'=>'no shop']);
+            }
+
+            $shop->latitude = $coords->latitude;
+            $shop->longitude = $coords->longitude;
+
+            if($shop->save()){
+
+                return response()->json(['message'=>'success']);
+            }
+
+            return response()->json(['message'=>'error']);
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
     public function returnProfile_info(){
         try{
             if(!session()->has("email")){
@@ -101,7 +482,7 @@ class SellerController extends Controller
             $message = new Message();
 
             $message->from_id = $request->from_id;
-            $message->to_id = $receiver->id;
+            $message->to_id = $receiver->id;    
             $message->messages = $request->message;
             $message->mention = $mention_id;
 

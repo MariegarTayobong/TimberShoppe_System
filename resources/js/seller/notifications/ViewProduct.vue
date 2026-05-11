@@ -6,10 +6,7 @@
         <div class="product-profile">
             <div class="image-container" :class="{ 'center-images': product.photos.length < 3 }">
 
-                <button class="attach-btn"
-                        @click="product_id = product.id">
-                    Attach video
-                </button>
+                
 
                 <button class="nav-btn nav-left"
                     @click="scrollImages('left', product.id)"

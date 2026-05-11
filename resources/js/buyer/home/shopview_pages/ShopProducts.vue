@@ -31,8 +31,19 @@
             <img src="../../../../images/no-star.png" class="star-rate" v-for="turn in returnStar('none',product.overall_rate)" :key="turn">
             <label>({{ product.overall_rate }})</label>
           </div>
+          <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between">
+            <label
+              :style="{backgroundColor: returnColorStatus(product.status)}"
+              style="color: white; padding: 5px; font-size: 8px; border-radius: 10px; font-weight: bolder;"
+            >{{ product.status }}</label>
+
+            <img src="../../../../images/verify.png" style="width: 20px; height: 20px;" v-if="product.shop.is_verified === 'verified'">
+          </div>
           <div class="item-comment">
             <label>{{ product.reviews.length }} Reviews</label>
+            <div>
+                  <label style="font-weight: bolder; color: gray;">{{ product.quantity }} stock</label>
+                </div>
           </div>
           <div class="item-shopname">
             <label>{{ shop.name }}</label>
@@ -144,6 +155,17 @@ export default {
     };
   },
   methods: {
+    returnColorStatus(status) {
+
+        if(status === 'Out of Stock') {
+
+          return 'red';
+        }
+        else {
+
+          return 'green';
+        }
+      },
     haveSearchContent(newval, type){
       console.log('newval: ', newval);
       if(this.products.length > 0){
@@ -365,6 +387,10 @@ export default {
   gap: 5px;
   margin-top: 10px;
   font-size: 12px;
+}
+
+.item-comment {
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
 }
 
 .item-rate,

@@ -6,6 +6,10 @@
       </div>
     </template>
     <template v-else>
+      <div style="width: 100%; display: flex; flex-direction: row; justify-content: end; align-items: center; gap: 10px; font-size: 18px;" v-if="shop.is_verified === 'verified'">
+        <img src="../../../../images/verify.png" style="width: 30px; height: 30px;">
+        <label style="font-weight: bolder; color: #13B8F2;">Shop verified</label>
+      </div>
       <h2 class="section-title">About This Shop</h2>
 
       <!-- Shop Info Section -->

@@ -17,11 +17,10 @@
             <div class="message-text">{{ message[1].messages }}</div>
             <div class="last-active">
               <div style="width: 7px; height: 7px; border-radius: 12px; background-color: green;" v-if="message[0].user.is_active === 1"></div>
-              <label>Active {{ (message[0].user.is_active === 1 ? "now" : returnFormatActivedTime(message[0].user.time_logout)) }}</label>
+              <label>{{ (message[0].user.is_active === 1 ? "Active now" : 'Offline') }}</label>
             </div>
           </div>
         </div>
-        <div class="minute-text">{{ returnTime(message[1].updated_at) }}</div>
       </div>
     </div>
   </div>
@@ -60,28 +59,24 @@ export default {
   },
   methods: {
     returnFormatActivedTime(datetime) {
-      const current = new Date();
-      const time = new Date(datetime);
 
-      const diffInMs = current - time;
-      const diffInSeconds = Math.floor(diffInMs / 1000);
+      const date = new Date(datetime);
+      const now = new Date();
+      const diff = now - date;
 
-      if (diffInSeconds < 60) {
-        return `${diffInSeconds} seconds ago`;
+      console.log('diff: ', diff);
+
+      if (diff < 60000) { // Less than 1 minute
+          return 'Just now';
+      } else if (diff < 3600000) { // Less than 1 hour
+          const minutes = Math.floor(diff / 60000);
+          return `${minutes}m ago`;
+      } else if (diff < 86400000) { // Less than 1 day
+          const hours = Math.floor(diff / 3600000);
+          return `${hours}h ago`;
+      } else {
+          return date.toLocaleDateString();
       }
-
-      const diffInMinutes = Math.floor(diffInSeconds / 60);
-      if (diffInMinutes < 60) {
-        return `${diffInMinutes} minutes ago`;
-      }
-
-      const diffInHours = Math.floor(diffInMinutes / 60);
-      if (diffInHours < 24) {
-        return `${diffInHours} hours ago`;
-      }
-
-      const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays} days ago`;
     },
 
 

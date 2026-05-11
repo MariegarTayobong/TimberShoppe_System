@@ -2,6 +2,22 @@
   <!-- Montserrat Google Fonts import for modern navbar font -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <div :class="['seller-container', showMenu ? 'with-sidebar' : 'no-sidebar']">
+
+        <NotifyWithXButton :message="message" v-if="message != ''" @close="message = ''"/>
+
+        <teleport to="body">
+            <GoVerified 
+            :user="user" 
+            v-if="showVerified" 
+            @close="showVerified = false" 
+            @success="user.shop.is_verified = 'pending'; showVerified = false; message = 'SUCCESSFUL. PLEASE WAIT FOR VERIFICATION THANK YOU!';"
+            />
+        </teleport>
+
+        <teleport to="body">
+            <Question_first :question="d.question" :isOpen="isOpen" @close="isOpen=false; d.selected_id = null;" @confirm="confirm()"/>
+        </teleport>
+
         <teleport to="body">
             <NewMessage :notifymessage="notifymessage" v-if="is_visible" @hidenotify="is_visible = false"/>
 
@@ -13,6 +29,29 @@
                 @close="showEditModal = false"
             />
         </teleport>
+
+        <teleport to="body">
+            <div class="map-container" v-if="show_change_location_modal && data_shop">
+                <div style="height: 500px; width: 1000px; display: flex; overflow: hidden; flex-direction: column; position: relative;">
+                    <div style="display: flex; flex-direction: row; align-items: center; z-index: 5000; background-color: gray; height: 50px; gap: 10px; justify-content: end; padding-right: 10px;">
+                        <!-- <button style="padding: 2px;" @click="getLocation()">Current Location</button> -->
+                        <img src="../images/cancel.png" style="width: 20px; height: 20px;  cursor: pointer;" @click="show_change_location_modal = false">
+                    </div>
+                    <div style="gap: 10px; position: absolute; top: 10%; right: 0; width: 300px; height: auto; padding: 10px; background-color: white; display: flex; flex-direction: column; z-index: 500; margin-right: 10px;">
+                        <div>
+                            <label>This is the coordinate you selected</label>
+                        </div>
+                        <div>
+                            <label>Latitude: {{ data_shop.latitude }}</label><br>
+                            <label>Longitude: {{ data_shop.longitude }}</label>
+                        </div>
+                        <button style="padding: 5px; background-color: green; font-weight: bolder; color: white;" @click="map_save_coordinate">Save</button>
+                    </div>
+                    <Map_Seller @returnCoordinate="returnCoordinate" :shopData="data_shop"/>
+                </div>
+            </div>
+        </teleport>
+
         <nav class="navbar navbar-light justify-content-between">
             <div class="navbar-left">
                 <button class="mobile-menu-toggle" @click="toggleMenu">
@@ -24,10 +63,13 @@
             <div class="navbar-right" v-if="user.shop">
                 <router-link to="/seller/messages" title="Messages" class="nav-icon">
                     <i class="fa-solid fa-message"></i>
-                </router-link>
+                </router-link>  
 
                 <div class="profile-circle" @click="toggleProfileBox">
-                    <img style="width: 30px; height: 30px; cursor: pointer;" :src="'/' + (user.shop && user.shop.profile_photo ? user.shop.profile_photo : (user.profile_photo || ''))" />
+                    <img style="width: 50px; height: 50px; cursor: pointer;" :src="'/' + (user.shop && user.shop.profile_photo ? user.shop.profile_photo : (user.profile_photo || ''))" />
+                    <img src="../images/warning.png" style="width: 20px; height: 20px; position: absolute; bottom: 0; left: 0;" v-if="user.shop.is_verified === 'no'">
+                    <img src="../images/stopwatch.png" style="width: 20px; height: 20px; position: absolute; bottom: 0; left: 0;" v-if="user.shop.is_verified === 'pending'">
+                    <img src="../images/verify.png" style="width: 20px; height: 20px; position: absolute; bottom: 0; left: 0;" v-if="user.shop.is_verified === 'verified'">
                 </div>
                 <div v-if="showProfileBox" class="floating-box profile-box">
                     <div class="profile-header" style="display:flex; gap:1em; align-items:center;">
@@ -35,6 +77,18 @@
                         <div style="display:flex; flex-direction:column;">
                             <div style="font-weight:700; font-size:1rem; color:#333">{{ user.shop && user.shop.name ? user.shop.name : user.name }}</div>
                             <div style="font-size:12px; color:#666">{{ user.email || '' }}</div>
+                            <div style="margin-top: 5px; display: flex; flex-direction: row; align-items: center; gap: 10px;" @click.stop="goVerified" v-if="user.shop.is_verified === 'no'">
+                                <img src="../images/warning.png" style="width: 20px; height: 20px;">
+                                <span style="color: red; text-decoration: underline; cursor: pointer;">Account still not verified?</span>
+                            </div>
+                            <div style="margin-top: 5px; display: flex; flex-direction: row; align-items: center; gap: 10px;" v-if="user.shop.is_verified === 'pending'">
+                                <img src="../images/stopwatch.png" style="width: 20px; height: 20px;">
+                                <span style="color: yellowgreen;">Waiting for verification ...</span>
+                            </div>
+                            <div style="margin-top: 5px; display: flex; flex-direction: row; align-items: center; gap: 10px;" v-if="user.shop.is_verified === 'verified'">
+                                <img src="../images/verify.png" style="width: 20px; height: 20px;">
+                                <span style="color: #13B8F2;">Verified</span>
+                            </div>
                         </div>
                     </div>
 
@@ -56,6 +110,9 @@
                         </div>
                         <div class="menu-item" @click.stop="openEditModal('account')">
                             <span>Change Account Info</span>
+                        </div>
+                        <div class="menu-item" @click.stop="openChangeLocation('shop_location')">
+                            <span>Change Shop Location</span>
                         </div>
                     </div>
 
@@ -80,7 +137,7 @@
                         </div>
                     </div>
                 </div>
-                <button @click="goLogout">Logout</button>
+                <button @click="isOpen=true">Logout</button>
             </div>
         </nav>
 
@@ -110,12 +167,12 @@
                     </button>
                 </router-link>
 
-                <router-link to="/seller/transaction-record">
+                <!-- <router-link to="/seller/transaction-record">
                     <button :class="{ active: $route.name === 'TransactionRecord' || $route.name === 'AddRecord'}">
                         <i class="fa-solid fa-list"></i>
-                        Transaction Record
+                        Item Log
                     </button>
-                </router-link>
+                </router-link> -->
 
             <!-- Notification button (remove comment here as well as the router-link below)
                 <router-link to="/seller/notifications">
@@ -137,6 +194,12 @@
                     </button>
                 </router-link>
             -->
+                <router-link to="/seller/order-list">
+                    <button :class="{ active: $route.name === 'Order' || $route.name === 'Order' }">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        Order
+                    </button>
+                </router-link>
                 <router-link to="/seller/map">
                     <button :class="{ active: $route.name === 'Map' }">
                         <i class="fa-solid fa-location-dot"></i>
@@ -224,17 +287,33 @@ import NewMessage from './seller/notifications/NewMessage.vue';
 import EditModals from './seller/profile/EditModals.vue';
 import { useDataStore } from './stores/dataStore';
 import ProfileInfo from './seller/profile/ProfileInfo.vue';
+import Map_Seller from './forms/Map.vue';
 import router from './router';
+import Question_first from './modal_global/Question_first.vue';
+import GoVerified from './seller/modal/GoVerified.vue';
+
+import NotifyWithXButton from './buyer/notify-modal/NotifyWithXButton.vue';
 
 export default{
     components: {
         examplemap,
         NewMessage,
         ProfileInfo,
-        EditModals
+        EditModals,
+        Map_Seller,
+        Question_first,
+        GoVerified,
+        NotifyWithXButton
     },
     data(){
         return{
+            message: '',
+            showVerified: false,
+            d: {
+                question: "Do you really want to logout?",
+                selected_id: null,
+            },
+            isOpen: false,
             is_visible: false,
             notifymessage: 'You have new notification',
             page: 'Dashboard',
@@ -251,10 +330,16 @@ export default{
             showEditModal: false,
             editType: null,
             recentNotifications: [],
+            data_shop: {},
+            show_change_location_modal: false,
         }
     },
     computed: {
         displayTitle(){
+            if(this.$route.name === "TransactionRecord" || this.$route.name === "AddRecord"){
+
+                return "Item Log"
+            }
             if(this.$route.name === 'AddProduct' || this.$route.name === 'ViewProduct'){
                 return 'Products';
             }
@@ -298,6 +383,44 @@ export default{
         this.messageEventListener = null;
     },
     methods: {
+
+        goVerified(){
+
+            this.showVerified = true;
+        },
+        confirm(){
+
+            this.isOpen=false;
+            this.goLogout();
+        },
+
+        returnCoordinate(coords){
+
+            this.data_shop.latitude = coords.lat;
+            this.data_shop.longitude = coords.long;
+        },
+
+        async map_save_coordinate(){
+
+            const store = useDataStore();
+
+            const data = new FormData;
+            data.append('coords', JSON.stringify(this.data_shop));
+            data.append('shop_id', store.selected_shop.id)
+
+            const res = await axios.post('/seller/update-location', data);
+
+            console.log(res.data.message);
+
+            await this.returnUserInfo();
+
+            this.show_change_location_modal = false;
+        },
+
+        openChangeLocation(){
+
+            this.show_change_location_modal = true;
+        },
         markAsRead(index) {
             if (this.recentNotifications[index].status === 'unread') {
                 this.recentNotifications[index].status = 'read';
@@ -451,6 +574,11 @@ export default{
             store.setUserInfo(res.data.message);
             store.setSelectedShop(res.data.shop);
             console.log('id: ', store.currentUser_info.id);
+
+
+            //initialize shop location
+            this.data_shop.latitude = res.data.shop.latitude;
+            this.data_shop.longitude = res.data.shop.longitude;
         },
         changePage(switchPage) {
             this.page = switchPage;
@@ -576,6 +704,18 @@ export default{
 </script>
 
 <style scoped>
+.map-container{
+    width: 100vw;
+    height: 100vh;
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.781);
+    left: 0;
+    top: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 .menu-item{
     cursor: pointer;
 }
@@ -754,6 +894,11 @@ export default{
   color: #5A4635;
   display: flex;
   align-items: center;
+}
+
+.profile-circle {
+
+    position: relative;
 }
 
 .profile-circle img {

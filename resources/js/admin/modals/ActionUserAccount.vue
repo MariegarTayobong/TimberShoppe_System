@@ -1,6 +1,10 @@
 <template>
   <div class="overlay" @click.self="closeModal">
 
+    <teleport to="body">
+      <Question_first :question="question" :isOpen="isOpen" @close="isOpen=false; act_type='';" @confirm="confirm()" style="z-index: 9999999;"/>
+    </teleport>
+
     <div v-if="is_loading">
       <img src="../../../images/kOnzy.gif" style="width: 100px; height: 100px;">
     </div>
@@ -12,7 +16,7 @@
 
       <div class="modal-body">
         <p>
-          Are you sure you want to <strong>deactivate</strong> or <strong>delete</strong> this account?
+          Are you sure you want to <strong>{{ user.is_deactivate ? 'activate' : 'deactivate' }}</strong> or <strong>delete</strong> this account?
         </p>
         <p class="user-name">
           User: <span>{{ user.name }}</span> <br />
@@ -32,9 +36,9 @@
 
       <div class="modal-footer">
         <button class="cancel-btn" @click="closeModal">Cancel</button>
-        <button class="deactivate-btn" @click="deactivateUser" v-if="!user.is_deactivate">Deactivate</button>
-        <button class="deactivate-btn" @click="activateUser" v-else>Activate</button>
-        <button class="delete-btn" @click="deleteUser">Delete</button>
+        <button class="deactivate-btn" @click="askDeactivate()" v-if="!user.is_deactivate">Deactivate</button>
+        <button class="deactivate-btn" @click="askActivate()" v-else>Activate</button>
+        <button class="delete-btn" @click="askDelete()">Delete</button>
       </div>
     </div>
   </div>
@@ -42,14 +46,19 @@
 
 <script>
 import axios from 'axios';
+import Question_first from '../../modal_global/Question_first.vue';
 
 export default {
   props: ['user'],
+  components: {Question_first},
   emits: ['close', 'deactivate', 'delete'],
   data() {
     return {
       message: '',
       is_loading: false,
+      question: '',
+      act_type: '',
+      isOpen: false,
     }
   },
   methods: {
@@ -65,7 +74,6 @@ export default {
       console.log(res.data.message);
 
       if(res.data.message === 'success'){
-        window.alert('YOU HAVE SUCCESSFULLY ACTIVATE THE ACCOUNT');
         
         this.$emit('save');
       }
@@ -74,7 +82,48 @@ export default {
       }
 
       this.is_loading = false;
-    },    
+    },   
+
+    askActivate() {
+
+      this.question = "DO YOU REALLY WANT TO ACTIVATE THIS USER ACCOUNT?";
+      this.act_type = 'activate';
+
+      this.isOpen = true;
+    },
+
+    askDeactivate(){
+
+      this.question = "DO YOU REALLY WANT TO DEACTIVATE THIS USER ACCOUNT?";
+      this.act_type = 'deactivate';
+
+      this.isOpen = true;
+    },
+    askDelete(){
+
+      this.question = "DO YOU REALLY WANT TO DELETE THIS USER ACCOUNT?";
+      this.act_type = 'delete';
+
+      this.isOpen = true;
+    },
+
+    confirm() {
+
+      if(this.act_type === 'deactivate'){
+
+        this.deactivateUser();
+      }
+      else if(this.act_type === 'activate'){
+
+        this.activateUser();
+      }
+      else{
+
+        this.deleteUser();
+      }
+
+      this.isOpen = false;
+    },
     closeModal() {
       this.$emit('close')
     },
@@ -90,7 +139,6 @@ export default {
       console.log(res.data.message);
 
       if(res.data.message === 'success'){
-        window.alert('YOU HAVE SUCCESSFULLY DEACTIVATE THE ACCOUNT');
         
         this.$emit('save');
       }
@@ -126,7 +174,6 @@ export default {
 
 
       if(res.data.message === 'success'){
-        window.alert('YOU SUCCESSFULLY DELETED AN ACCOUNT');
         this.$emit('save');
       }
       else{

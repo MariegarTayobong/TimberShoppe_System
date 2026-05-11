@@ -121,7 +121,7 @@ export default {
         //https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
         //tiles sa sattelite ver.
 
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'Tiles &copy; Esri — Sources: Esri, Garmin, USGS, etc.',
             maxZoom: 19,
             minZoom: 3,
@@ -142,7 +142,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 #map{
     width: 100%;
     height: 100%;

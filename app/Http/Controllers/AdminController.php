@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Mail\ActivateMail;
+use App\Mail\adminsignin;
 use App\Mail\BlockProductMail;
 use App\Mail\DeactivateMail;
 use App\Mail\DeleteAccountMail;
 use App\Mail\OtpMail;
+use App\Mail\RejectMail;
 use App\Mail\UnblockProductMail;
+use App\Mail\VerifyAccountMail;
+use App\Models\Addtocart;
 use App\Models\Admin;
 use App\Models\Adminotp;
 use App\Models\Follower;
@@ -23,6 +27,7 @@ use App\Models\Reviewphoto;
 use App\Models\Reviewvideo;
 use App\Models\Shop;
 use App\Models\User;
+use App\Models\Verifiedpending;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +35,102 @@ use Illuminate\Support\Facades\Mail;
 
 class AdminController extends Controller
 {
+
+    public function verify_account(Request $req) {
+
+        try{
+
+            $obj = Verifiedpending::where('id', $req->id)->first();
+
+            $action = $req->action;
+
+            if(!$obj) {
+
+                return response()->json(['message' => 'obj not found']);
+            }
+
+            if($action === 'verified') {
+                $obj->status = "verified";
+            }
+            else{
+
+                $obj->status = "rejected";
+            }
+
+            if($obj->save()) {
+
+                $seller = User::where('email', $req->email)->first();
+
+                if(!$seller) {
+
+                    return response()->json(['message' => 'seller not found']);
+                }
+
+                $shop = Shop::where('user_id', $seller->id)->first();
+
+                if(!$shop) {
+
+                    return response()->json(['message' => 'shop not found']);
+                }
+
+                if($action === 'verified') {
+                    $shop->is_verified = "verified";
+                }
+                else {
+
+                    $shop->is_verified = "no";
+                }
+
+                if($shop->save()){
+
+
+
+                    // Mail::to($req->gmail)->send(new UnblockProductMail(($data)));
+
+                    $data = [
+                        'seller_name' => "$seller->firstname $seller->lastname",
+                        'shop_name' => $shop->name,
+                        'seller_email' => $seller->email,
+                        'seller_username' => $seller->name,
+                        'message' => $req->message
+                    ];
+
+                    if($action === "verified") {
+
+                        Mail::to($req->email)->send(new VerifyAccountMail($data));
+
+                        return response()->json(['message' => 'successful-verify']);
+                    }
+                    else {
+
+                        Mail::to($req->email)->send(new RejectMail($data));
+
+                        return response()->json(['message' => 'successful-rejected']);
+                    }
+                    
+                }
+            }
+
+            return response()->json(['message' => 'error']);
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
+
+    public function return_accountVerify() {
+
+        try{
+
+            $accounts = Verifiedpending::with(['seller', 'seller.shop'])->where('status', 'pending')->get();
+            // $accounts = Verifiedpending::with(['seller', 'seller.shop'])->get();
+
+            return response()->json(['data' => $accounts]);
+        }
+        catch(\Exception $ex){
+            return response()->json(['message'=>$ex->getMessage()]);
+        }
+    }
 
     public function admin_returnData_dashboard(){
 
@@ -39,12 +140,26 @@ class AdminController extends Controller
 
             $products = Product::with(['shop', 'shop.user'])->get();
 
+            $have = [];
+            $unique_p = [];
+
+            foreach($products as $product){
+
+                if(!in_array($product->name, $have)){
+
+                    array_push($have, $product->name);
+                    array_push($unique_p, $product);
+                }
+            }
+
             $users = User::get();
 
             $data = [
                 'notif' => $notif,
                 'products' => $products,
-                'users' => $users
+                'users' => $users,
+                'unique_products' => count($have),
+                'unique_p' => $unique_p,
             ];
 
             return response()->json(['message' => 'success', 'data' => $data]);
@@ -146,16 +261,18 @@ class AdminController extends Controller
             }
 
             $image = $req->file('file_photo');
+            $imagepath = null;
 
             if($image){
                 $filename = time(). '_' .$image->getClientOriginalName();
                 $image->storeAs('public/uploads/', $filename);
                 $imagepath = 'storage/uploads/'.$filename;
+                
+                $admin->path = $imagepath;
             }
 
             $admin->username = $data->username;
             $admin->password = $data->password;
-            $admin->path = $imagepath;
 
             if($admin->save()){
 
@@ -219,6 +336,17 @@ class AdminController extends Controller
                     }
 
                     $m->delete();
+                }
+            }
+
+            //delete order cart
+            $cart = Addtocart::where('buyer_id', $id)->get();
+
+            if($cart) {
+
+                foreach($cart as $c) {
+
+                    $c->delete();
                 }
             }
 
@@ -341,8 +469,26 @@ class AdminController extends Controller
             $seller = User::where('id', $seller_id)->first();
             
             if(!$shop){
-
                 return response()->json(['message' => 'shop not exist']);
+            }
+
+            $cart = Addtocart::where('seller_id', $seller_id)->get();
+            if($cart) {
+
+                foreach($cart as $c) {
+
+                    $c->delete();
+                }
+            }
+
+            //delete verified data
+            $verified_data = Verifiedpending::where('seller_id', $seller_id)
+                                            ->get();
+            if(!$verified_data->isEmpty()) {
+
+                foreach($verified_data as $v) {
+                    $v->delete();
+                }
             }
 
             //notification and message delete
@@ -382,12 +528,19 @@ class AdminController extends Controller
 
                 foreach($reviews as $r){
 
+                    //notification
+                    $notifs = Notification::where('review_id', $r->id)->get();
+                    if(!$notifs->isEmpty()){
+                        
+                        foreach($notifs as $n){
+                            $n->delete();
+                        }
+                    }
+
                     //photo
                     $photos = Reviewphoto::where('review_id', $r->id)->get();
                     //video
                     $videos = Reviewvideo::where('review_id', $r->id)->get();
-                    //notification
-                    $notifs = Notification::where('review_id', $r->id)->get();
 
                     if(!$photos->isEmpty()){
                         
@@ -399,12 +552,6 @@ class AdminController extends Controller
                         
                         foreach($videos as $video){
                             $video->delete();
-                        }
-                    }
-                    if(!$notifs->isEmpty()){
-                        
-                        foreach($notifs as $n){
-                            $n->delete();
                         }
                     }
                     //delete review
@@ -458,8 +605,9 @@ class AdminController extends Controller
             } 
             
             //delete completely notification
-
-            $notifications = Notification::where('user_id', $seller_id)->get();
+            $notifications = Notification::where('user_id', $seller_id)
+                                         ->orWhere('from_id', $seller_id)
+                                         ->get();
 
             if(!$notifications->isEmpty()){
                 
@@ -973,13 +1121,13 @@ class AdminController extends Controller
                 'reviews',
                 'reviews.reviewphotos',
                 'reviews.reviewvideos'
-            ])->where('role', 'buyer')->get();
+            ])->where('role', '=', 'buyer')->get();
             
             $u_sellers = User::with([
                 'shop', 
                 'shop.reviews', 
                 'followers',
-                ])->where('role', 'seller')->get();
+                ])->where('role', '=', 'seller')->get();
 
             $buyers = $u_buyers;
             $sellers = $u_sellers;
@@ -1016,7 +1164,7 @@ class AdminController extends Controller
 
                 if($otp->save()){
                     //send email to user thru gmail
-                    Mail::to($admin->email)->send(new OtpMail($code));
+                    Mail::to($admin->email)->send(new adminsignin($code));
 
                     return redirect()->route('admin_login')->with(['email' => $admin->email, 'response' => 'exist']);
                 }
@@ -1028,5 +1176,20 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin_login')->with(['message' => 'ACCOUNT NOT FOUND']);
+    }
+
+    public function admin_returnProducts(Request $req){
+
+        try{
+
+            $products = Product::with(['shop', 'shop.user'])->get();
+
+            return response()->json(['products' => $products], 200);
+        }
+        catch(\Exception $ex){
+
+            Log::info('error', ['error' => $ex->getMessage()]);
+            return response()->json(['message' => $ex->getMessage()]);
+        }
     }
 }

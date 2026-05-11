@@ -1,5 +1,9 @@
 <template>
   <div v-if="visible" class="overlay">
+
+    <teleport to="body">
+      <MessageNotify :message="message" v-if="message !== ''"/>
+    </teleport>
     <div class="modal">
       <div class="modal-header">
         <h2>Edit User Information</h2>
@@ -59,6 +63,8 @@
 
 <script>
 import { useDataStore } from '../../stores/dataStore';
+import MessageNotify from './MessageNotify.vue';
+
 export default {
   name: 'EditUserModal',
   props: {
@@ -66,9 +72,11 @@ export default {
     user_clicked: { type: Object, default: null }
   },
   emits: ['update:modelValue', 'saved'],
+  components: {MessageNotify},
   data() {
     return {
       visible: true,
+      message: '',
       saving: false,
       error: '',
       success: false,
@@ -130,7 +138,8 @@ export default {
 
         console.log(res.data.message);
         if(res.data.message === 'success'){
-          window.alert("YOU HAVE SUCCESSFULLY EDITED THE INFORMATION OF A USER.");
+          this.message = '';
+          this.message = "YOU HAVE SUCCESSFULLY EDITED THE INFORMATION OF A USER.";
 
           this.$emit('save_close');
         }

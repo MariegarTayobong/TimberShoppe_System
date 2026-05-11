@@ -16,9 +16,9 @@
         </teleport>
 
         <div class="header">
-        <h1>Add New Transaction Record</h1>
+        <h1>Add New Record</h1>
         <router-link to="/seller/transaction-record">
-            <button class="btn btn-secondary">Return to Records</button>
+            <button class="btn btn-secondary">Back</button>
         </router-link>
         </div>
 

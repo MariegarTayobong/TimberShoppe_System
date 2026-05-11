@@ -1,6 +1,10 @@
 <template>
   <div class="profile-modal">
 
+    <teleport to="body">
+      <Question_first :question="question" :isOpen="isOpen" @close="isOpen=false;" @confirm="confirm()"/>
+    </teleport>
+
     <!--IS LOADING-->
     <teleport to="body">
         <div class="overlay" v-if="is_loading">
@@ -32,7 +36,7 @@
     </div>
 
     <div class="form-group">
-      <label>New Password</label>
+      <label>Password</label>
       <input type="password" v-model="form.password" placeholder="Enter new password" />
     </div>
 
@@ -41,7 +45,7 @@
       <input type="password" v-model="form.confirmPassword" placeholder="Confirm password" />
     </div>
 
-    <label style="cursor: pointer;">Logout</label>
+    <label style="cursor: pointer;" @click="isOpen=true;">Logout</label>
 
     <!-- Save Button -->
     <div class="button-container">
@@ -52,11 +56,15 @@
 
 <script>
 import axios from 'axios';
+import Question_first from '../../modal_global/Question_first.vue';
 
 export default {
     props: ['admin'],
+  components: {Question_first},
   data() {
     return {
+      question: 'DO YOU REALLY WANT TO LOGOUT?',
+      isOpen: false,
       previewImage: null,
       file_photo: null,
       is_loading: false,
@@ -69,6 +77,14 @@ export default {
     };
   },
   methods: {
+    confirm() {
+
+      this.goLogout();
+    },
+    goLogout(){
+
+      window.location.href = "/logout";
+    },
     onImageChange(e) {
       const file = e.target.files[0];
       if (file) {
@@ -102,8 +118,6 @@ export default {
       if(res.data.message === 'success'){
         
         this.$emit('save', res.data.admin);
-
-        window.alert("YOU SUCCESSFULLY UPDATE YOUR INFO");
       }
       else{
 

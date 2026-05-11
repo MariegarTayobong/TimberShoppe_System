@@ -1,6 +1,10 @@
 <template>
   <div class="manage-account-container">
 
+        <teleport to="body">
+      <MessageNotify :message="message" :title="title" @closed="closed"/>
+    </teleport>
+
         <!--IS LOADING-->
         <UserSeemore 
         v-if="user_clicked && open_modal === 'view'" 
@@ -22,21 +26,21 @@
             <label>Search</label>
             <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
-                    <input type="search" placeholder="Search ..." class="search-bar" v-model="search_text">
-                    <select v-model="search_type" style="padding: 10px; font-size: 15px;">
+                    <input type="search" placeholder="Search by username..." class="search-bar" v-model="search_text">
+                    <!-- <select v-model="search_type" style="padding: 10px; font-size: 15px;">
                         <option value="">All</option>
                         <option value="username">USERNAME</option>
                         <option value="name">NAME</option>
-                    </select>
+                    </select> -->
 
                     <select v-model="client_status_search" style="padding: 10px; font-size: 15px;">
                         <option value="">All</option>
                         <option value="block">Blocked</option>
-                        <option value="active">Actived</option>
+                        <option value="active">Active</option>
                     </select>
 
-                    <button @click="search()" style="padding: 10px; font-size: 15px;">Search</button>
-                    <button @click="search_clear()" style="padding: 10px; font-size: 15px;">Clear</button>
+                    <!-- <button @click="search()" style="padding: 10px; font-size: 15px;">Search</button>
+                    <button @click="search_clear()" style="padding: 10px; font-size: 15px;">Clear</button> -->
                 </div>
                 <label style="font-weight: bolder;">{{ clicked_type.toUpperCase() }}</label>
             </div>
@@ -48,7 +52,7 @@
                 <thead>
                     <tr>
                         <th>TYPE</th>
-                        <th>IS BLOCKED</th>
+                        <th>STATUS</th>
                         <th>USERNAME</th>
                         <th>TOTAL REVIEWS</th>
                         <th>FULLNAME</th>
@@ -62,9 +66,9 @@
                     <tr v-for="(user, index) of search_data" :key="index" @click="user_clicked = user">
 
                         <td>{{ user.role }}</td>
-                        <td>{{ user.is_deactivate ? 'YES' : 'NO' }}</td>
+                        <td>{{ user.is_deactivate ? 'Deactivated' : 'Active' }}</td>
                         <td>{{ user.name }}</td>
-                        <td>{{ user.shop.reviews.length }}</td>
+                        <td>{{ user.shop.reviews ? user.shop.reviews.length : 0 }}</td>
                         <td>{{ user.firstname}} {{ user.m_initial ? `${user.m_initial}.` : '' }} {{ user.lastname }}</td>
                         <td>{{ user.shop.name }}</td>
                         <td>{{ user.shop.address }}</td>
@@ -78,7 +82,7 @@
                 <thead>
                     <tr>
                         <th>TYPE</th>
-                        <th>IS BLOCKED</th>
+                        <th>STATUS</th>
                         <th>USERNAME</th>
                         <th>FULLNAME</th>
                         <th>Birthday</th>
@@ -90,7 +94,7 @@
                     <tr v-for="(user, index) of search_data" :key="index"  @click="user_clicked = user;">
 
                         <td>{{ user.role }}</td>
-                        <td>{{ user.is_deactivate ? 'YES' : 'NO' }}</td>
+                        <td>{{ user.is_deactivate ? 'Deactivated' : 'Active' }}</td>
                         <td>{{ user.name }}</td>
                         <td>{{ user.firstname}} {{ user.m_initial ? `${user.m_initial}.` : '' }} {{ user.lastname }}</td>
                         <td>{{ user.birthday }}</td>
@@ -110,12 +114,14 @@ import axios from 'axios';
 import UserSeemore from '../modals/UserSeemore.vue';
 import EditPersonalInformation from '../modals/EditPersonalInformation.vue';
 import EditShopInformation from '../modals/EditShopInformation.vue';
+import MessageNotify from '../modals/MessageNotify.vue';
 
 export default {
     components: {
         UserSeemore, 
         EditPersonalInformation, 
-        EditShopInformation
+        EditShopInformation,
+        MessageNotify
     },
     computed: {
         filteredUsers(){
@@ -137,6 +143,8 @@ export default {
     },
     data() {
         return{
+            message: '',
+            title: '',
             search_type: '',
             clicked_type: 'seller',
             client_status_search: '',
@@ -155,9 +163,25 @@ export default {
         clicked_type(){
 
             this.search();
+        },
+
+        search_text(){
+          
+            this.search();
+        },
+
+        client_status_search(){
+            
+            this.search();
         }
     },
     methods: {
+
+      closed(){
+
+        this.message = '';
+        this.title = '';
+      },
 
         search_clear(){
 
@@ -170,6 +194,9 @@ export default {
 
         async save_deactivate(){
 
+            this.message = '';
+            this.title = "ACTION";
+            this.message = "ACTION SUCCESSFUL.";
             this.user_clicked = null;
             this.open_modal = 'view';
 
@@ -187,15 +214,7 @@ export default {
                  return_data = this.buyers.filter(user => user.role === "buyer");
             }
 
-            //for search_type
-            if(this.search_type === 'username'){
-
-                return_data = return_data.filter(user => user.name.toLowerCase().includes(this.search_text.toLowerCase()));
-            }
-            else if(this.search_type === 'name'){
-
-                return_data = return_data.filter(user => this.returnFullname(user).toLowerCase().includes(this.search_text.toLowerCase()));
-            }
+            return_data = return_data.filter(user => user.name.toLowerCase().includes(this.search_text.toLowerCase()));
 
             //for status
             if(this.client_status_search === 'active'){
@@ -220,13 +239,15 @@ export default {
 
         async save_close(){
 
+            this.messsage = '';
+            this.title = 'EDIT'
+            this.message = "YOU HAVE SUCCESSFULLY EDITED THE INFORMATION OF A USER.";
             this.open_modal = 'view';
             this.user_clicked = null;
             await this.returnUsers();
         },
 
         closeEdit(){
-
             this.open_modal = 'view';
         },
 

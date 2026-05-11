@@ -146,22 +146,35 @@ class NotificationController extends Controller
     public function checkNotify(Request $req){
        try{
 
-            $notify = Notification::where('user_id', $req->id)->orderBy('created_at', 'desc')->get();
+            $notify = Notification::with(['users','products.photos', 'users.shop.user', 'products.shop', 'reviews', 'messages'])
+                                            ->where('notifications.user_id', $req->id)
+                                            ->where('to_admin', 0)
+                                            ->orderBy('notifications.created_at', 'desc')
+                                            ->get();
+
+            $data = [];
+
+            foreach($notify as $n){
+
+                if($n->users->is_deactivate === 0){
+                    array_push($data, $n);
+                }
+            }
 
             Log::info('notify', ['notify'=>$notify]);
 
             if($notify->isEmpty()){
-                return response()->json(['message'=>false, 'notifications' => $notify]);
+                return response()->json(['message'=>false, 'notifications' => $data]);
             }
 
             foreach($notify as $n){
                 
                 if($n->seen === 0){
-                    return response()->json(['message'=>true, 'notifications' => $notify]);
+                    return response()->json(['message'=>true, 'notifications' => $data]);
                 }
             }
 
-            return response()->json(['message'=>false, 'notifications' => $notify]);
+            return response()->json(['message'=>false, 'notifications' => $data]);
        }
        catch(\Exception $err){
             return response()->json(['message'=>$err->getMessage()]);

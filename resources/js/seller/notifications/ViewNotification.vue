@@ -82,6 +82,13 @@ export default{
                   console.error('Product ID not found for notification:', notify);
                 }
                 break;
+              case 'Checkout':
+                if (notify.products && notify.products.id) {
+                  this.goViewProduct(notify.products.id);
+                } else {
+                  console.error('Product ID not found for notification:', notify);
+                }
+                break;
           }
       },
       isFloat(num){
@@ -119,6 +126,8 @@ export default{
                 return notify.reviews.comment;
               case 'rate product':
                 return notify.reviews.comment;
+              case 'Checkout':
+                return notify.text;
           }
       },
       returnLabel(status){

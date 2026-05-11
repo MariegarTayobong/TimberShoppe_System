@@ -53,7 +53,8 @@ class RegisterController extends Controller
             $account->birthday = $data->birthday;
             $account->age = $data->age;
             $account->contact_no = $data->contact_no;
-            $account->current_address = 'sabang';
+            $account->current_address = $data->address;
+            // $account->current_address = 'sabang';
             $account->total_followers = 0;
             $account->profile = $imagepath;
 

@@ -1,8 +1,34 @@
 <template>
   <div class="buyer-product">
+
+    <teleport to="body">
+      <ChooseReceive v-show="show_choose" @close="show_choose = false" @select_method="set_method"/>
+    </teleport>
+
+    <teleport to="body">
+      <Question_first :question="question" :isOpen="isOpen" @close="isOpen=false; act_type='';" @confirm="confirm()"/>
+    </teleport>
+
+    <NotifyWithXButton :message="message" v-if="message != ''" @close="message = ''"/>
+
     <teleport to="body">
         <MorePhotos v-if="show_morePhotos" @hideMorePicture="hideMorePicture" :photos="photos"/>
     </teleport>
+
+    <teleport to="body">
+        <AddToCart 
+        :product="product" 
+        @exit_addtocart_modal="exit_addtocart_modal" 
+        v-if="show_add_to_cart"
+        :is_exist="is_exist"
+        @success_method="success_method"
+        />
+    </teleport>
+
+    <teleport to="body">
+        <Checkout :product="product"  @exit_addtocart_modal="show_checkout = false;" v-if="show_checkout" :is_exist="is_exist" @success_method="success_method"/>
+    </teleport>
+
     <div class="back-button" @click="goBack">
         <img src="../../../images/left-arrows.png">
         <label>PRODUCT</label>
@@ -40,12 +66,31 @@
 
         <div class="shop-name">
             <label @click="$router.push({name: 'ShopAbout', params: {id: product.shop_id}});">{{ product.shop.name }}</label>
+            <img src="../../../images/verify.png" v-if="product.shop.is_verified === 'verified'">
         </div>
         <div class="product-more-info">
-            <label class="product-price">PHP {{ product.price }}</label>
+            <div style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; margin-top: 10px;">
+                <label class="product-price">PHP {{ product.price }}</label>
+                <div
+                :style="{backgroundColor: returnStatusColor(product.status)}"
+                style="max-width: 100px; text-align: center; padding: 5px; font-size: 10px; color: white; font-weight: bolder; border-radius: 20px;"
+                >
+                    {{ product.status }}
+                </div>
+            </div>
+            <label style="color: gray; font-size: 14px;">{{ product.quantity }} stock</label>
             <label class="product-name">{{ product.name }}</label>
             <label class="text">{{ product.shop.address }}</label>
             <label class="text">{{ product.category }}</label>
+        </div>
+
+        <div style="margin-top: 20px; width: 200px; position: relative; display: flex; flex-direction: row; gap: 10px;">
+            <button class="add-to-cart-btn" @click="addToCart()" :class="{disabled_cart : product.status === 'Out of Stock'}" :disabled="product.status === 'Out of Stock'">
+                Add to cart
+            </button>
+            <button class="checkout-btn" @click="checkout()" :class="{disabled_cart : product.status === 'Out of Stock'}" :disabled="product.status === 'Out of Stock'">
+                Check out
+            </button>
         </div>
     </div>
     <div class="border-gray"></div>
@@ -157,15 +202,28 @@
 </template>
 
 <script>
+import ChooseReceive from '../modals/ChooseReceive.vue';
+import Question_first from '../../modal_global/Question_first.vue';
+import NotifyWithXButton from '../notify-modal/NotifyWithXButton.vue';
 import MorePhotos from './MorePhotos.vue';
+import AddToCart from '../modals/AddToCart.vue';
+import Checkout from '../modals/Checkout.vue';
 import { useDataStore } from '../../stores/dataStore';
 import axios from 'axios';
 export default {
     components: {
-        MorePhotos
+        MorePhotos,
+        AddToCart,
+        Checkout,
+        Question_first,
+        NotifyWithXButton,
+        ChooseReceive
     },
     data(){
         return{
+            show_choose: false,
+            isOpen: false,
+            question: '',
             can_rate: false,
             show_pic: false,
             pic: null,
@@ -187,9 +245,183 @@ export default {
                 no_star: 1,
             },
             videos: null,
+            show_add_to_cart: false,
+            show_checkout: false,
+            check_checkout: null,
+            check_added_cart: null,
+            action: '',
+            is_exist: false,
+            message: '',
+            r_method: '',
         }
     },
     methods: {
+
+        async set_method(method) {
+
+            this.r_method = method;
+            this.show_choose = false;
+            await this.goCheckout_addedcart();
+        },
+
+        async goCheckout_addedcart() {
+
+            const store = useDataStore();
+
+            const data = new FormData();
+            data.append('product_id', this.product.id);
+            data.append('buyer_id', store.currentUser_info.id);
+            data.append('method', this.r_method);
+
+            const res = await axios.post('/buyer/checkout/added-cart', data);
+
+            console.log(res.data.message);
+
+            if(res.data.message === "successful"){
+
+                this.message = "CHECKOUT SUCCESSFULLY";
+
+                await this.returnCheckedOut();
+            }
+        },
+
+        async success_method() {
+
+            await this.returnCheckedOut();
+        },
+
+        confirm() {
+
+            console.log('GO ACTION!');
+            if(this.action === 'add-to-cart') {
+                this.show_add_to_cart = true;  
+            }
+            else if(this.action === 'checkout-addedcart') {
+
+                this.show_choose = true;
+            }
+            else {
+                this.show_checkout = true;
+            }
+
+            this.isOpen = false;
+        },
+
+        async returnCheckedOut() {
+
+            const store = useDataStore();
+
+            console.log('id: ', store.currentUser_info.id);
+            
+            const res = await axios.post('/buyer/return-checkedout', {id: store.currentUser_info.id});
+
+            console.log('check out: ', res.data.checkout);
+            console.log('added cart: ', res.data.added_cart);
+            this.check_checkout = res.data.checkout;
+            this.check_added_cart = res.data.added_cart;
+        },
+
+        checkout() {
+
+            this.action = 'checkout';
+            this.func_check_checkout();
+
+            if(!this.is_exist) {
+                this.func_check_addtocart_incheckout();
+            }
+        },
+
+        func_check_addtocart_incheckout() {
+
+            const is_exist = this.check_added_cart.some(data => data.product_id === this.product.id);
+
+            if(is_exist) {
+                this.action = "checkout-addedcart";
+                this.isOpen = true;
+                this.question = "YOU HAVE THIS PRODUCT PENDING ON YOUR CART. DO  YOU WANT TO CHECKOUT THIS?";
+                this.is_exist = true;
+                this.show_checkout = false;
+            }
+            else{
+
+                this.show_checkout = true;
+                this.is_exist = false;
+            }
+        },
+
+        returnStatusColor(status) {
+
+            if(status === 'Out of Stock') {
+
+                return 'red';
+            }
+            else {
+
+                return 'green';
+            }
+        },
+
+        exit_addtocart_modal() {
+
+            this.show_add_to_cart = false;
+        },
+
+        addToCart() {
+        
+            this.action = "add-to-cart"; 
+            console.log('product: ', this.product);
+
+            this.func_check_addtocart();
+            // if(!this.is_exist) {
+            //     this.func_check_checkout_inaddcart();
+            // }
+        },
+
+        func_check_checkout_inaddcart() {
+
+            const is_exist = this.check_checkout.some(data => data.product_id === this.product.id);
+
+            if(is_exist) {
+                this.action = "checkout";
+                this.isOpen = true;
+                this.question = "THIS PRODUCT IS ALREADY CHECKED OUT AND WAITING FOR ORDER FULFILLMENT. DO YOU WANT TO ADD THIS ON YOUR CHECKOUT?";
+                this.is_exist = true;
+            }
+            else{
+
+                this.show_add_to_cart = true;
+                this.is_exist = false;
+            }
+        },
+
+        func_check_checkout() {
+
+            const is_exist = this.check_checkout.some(data => data.product_id === this.product.id);
+
+            if(is_exist) {
+                this.isOpen = true;
+                this.question = "THIS PRODUCT IS ALREADY CHECKED OUT AND WAITING FOR ORDER FULFILLMENT. DO YOU WANT TO ADD THIS ON YOUR CHECKOUT?";
+                this.is_exist = true;
+            }
+            else{
+                this.is_exist = false;
+            }
+        },
+
+        func_check_addtocart() {
+
+            const is_exist = this.check_added_cart.some(data => data.product_id === this.product.id);
+
+            if(is_exist) {
+                this.isOpen = true;
+                this.question = "THIS PRODUCT IS ALREADY ADDED IN CART. DO YOU WANT TO ADD?";
+                this.is_exist = true;
+            }
+            else{
+                this.show_add_to_cart = true;
+                this.is_exist = false;
+            }
+        },
         
         addVideo(e){
             const file = e.target.files[0];
@@ -394,8 +626,10 @@ export default {
     async mounted(){
         this.$emit("changepathtext", "home");
         window.scrollTo(0, 0);
+        await this.returnCheckedOut();
         await this.returnVideos();
         await this.returnReviews();
+        console.log('here: ');
     }
 }
 </script>
@@ -593,6 +827,12 @@ export default {
     display: flex;
     flex-direction: row;
     justify-content: end;
+    align-items: center;
+    gap: 10px;
+}
+.shop-name img{
+    width: 25px;
+    height: 25px;
 }
 .shop-name label{
     font-size: 12px;
@@ -645,6 +885,7 @@ export default {
     align-items: center;
     gap: 10px;
     padding-top: 5px;
+    position: relative;
 }
 .product-profile-pic{
     height: 200px;
@@ -672,7 +913,40 @@ export default {
     box-sizing: border-box;
     padding-top: 70px;
 }
+.add-to-cart-btn {
+    background-color: #D25E27;
+    border: 1px solid gray;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    position: relative;
+}
+
+.checkout-btn{
+    background-color: #279cd2;
+    border: 1px solid gray;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.add-to-cart-btn.disabled_cart {
+
+    background-color: gray;
+}
+
+.checkout-btn.disabled_cart {
+
+    background-color: gray;
+}
+
 @media (min-width: 768px){
+    .add-to-cart-btn {
+        position: absolute; right: 0;
+    }
     .buyer-product{
         position: relative;
         display: flex;
@@ -732,6 +1006,11 @@ export default {
     .pic{
         height: 100px;
         width: 100px;
+    }
+    .shop-name img {
+
+        width: 30px;
+        height: 30px;
     }
     .shop-name label{
         font-size: 20px;

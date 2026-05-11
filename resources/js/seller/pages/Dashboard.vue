@@ -20,9 +20,7 @@
                     <p class="total-followers"><span>{{ follower_statistics.total }}</span> total followers</p>
                 </div>
 
-                <router-link :to="{ name: 'Map' }">
-                    <i class="fi fi-tr-land-location"></i>
-                </router-link>
+                
             </div>
         </div>
 
@@ -1547,17 +1545,6 @@ export default {
     margin-top: 1em;
     display: inline-block;
     transition: filter 150ms ease, transform 120ms ease;
-}
-
-.header-follower img:hover {
-    /* stronger tint toward #833d03 and slight scale for feedback */
-    filter: sepia(1) saturate(600%) hue-rotate(-20deg) brightness(0.9) contrast(0.95);
-    transform: scale(1.03);
-    cursor: pointer;
-}
-
-.header-follower:hover {
-    background-color: #833d03;
 }
 
 .stats-content {

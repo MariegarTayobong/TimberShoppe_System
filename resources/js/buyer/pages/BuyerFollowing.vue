@@ -5,44 +5,61 @@
     </div>
 
     <teleport to="body">
-      <Notify :message="message" v-if="message !== '' || message"/>
+      <Notify :message="message" v-if="message !== '' || message" />
     </teleport>
 
     <div class="search-bar">
       <input type="text" placeholder="Search" v-model="searchQuery" />
       <span v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">✕</span>
     </div>
-    <select v-model="category" class="category-select">
-      <option value="" disabled>Category</option>
-      <option value="Any">Any</option>
-      <option value="Furniture">Furniture</option>
-      <option value="Kitchenware">Kitchenware</option>
-      <option value="Musical Instrument">Musical Instrument</option>
-      <option value="Decorative Items">Decorative Items</option>
-      <option value="Games">Games</option>
-      <option value="Outdoor Decor">Outdoor Decor</option>
-      <option value="Home Decor">Home Decor</option>
-    </select>
+
     <div class="overlay" v-if="!follows">
-      <img src="../../../images/kOnzy.gif">
+      <img src="../../../images/kOnzy.gif" />
     </div>
+
     <template v-else>
       <div style="margin-bottom: 30px; font-size: 14px;">
-        <label>{{ follows.length }} Shops followed</label>
+        <label>{{ filteredFollows.length }} Shops followed</label>
       </div>
+
       <div class="shop-list-following">
-        <div class="shop-list" v-if="follows">
-          <div class="shop-card" v-for="follow in follows" :key="follow.id" @click="goShop(follow.follows.shop.id)">
+        <div class="shop-list" v-if="filteredFollows">
+          <div
+            class="shop-card"
+            v-for="follow in filteredFollows"
+            :key="follow.id"
+            @click="goShop(follow.follows.shop.id)"
+          >
             <div class="shop-info">
-              <img :src="'/'+follow.follows.shop.profile_photo" alt="shop avatar" class="shop-avatar" />
+              <img
+                :src="'/' + follow.follows.shop.profile_photo"
+                alt="shop avatar"
+                class="shop-avatar"
+              />
               <label class="shop-name">{{ follow.follows.shop.name }}</label>
+
               <div class="shop-actions">
-                <img src="../../../images/location.png" @click.stop="goLocation(parseFloat(follow.follows.shop.latitude), parseFloat(follow.follows.shop.longitude))">
-                <img src="../../../images/send.png" @click.stop="goMessage(follow.follows.id)">
+                <img
+                  src="../../../images/location.png"
+                  @click.stop="goLocation(
+                    parseFloat(follow.follows.shop.latitude),
+                    parseFloat(follow.follows.shop.longitude)
+                  )"
+                />
+                <img
+                  src="../../../images/send.png"
+                  @click.stop="goMessage(follow.follows.id)"
+                />
               </div>
             </div>
+
             <div>
-              <button class="unfollow-btn" @click.stop="goUnfollow(follow.user_id, follow.follower_id)">Unfollow</button>
+              <button
+                class="unfollow-btn"
+                @click.stop="goUnfollow(follow.user_id, follow.follower_id)"
+              >
+                Unfollow
+              </button>
             </div>
           </div>
         </div>
@@ -50,6 +67,7 @@
     </template>
   </div>
 </template>
+
 
 <script>
 import { useDataStore } from '../../stores/dataStore';
@@ -60,6 +78,7 @@ export default {
   components: {
     Notify
   },
+
   data() {
     return {
       message: '',
@@ -77,125 +96,135 @@ export default {
       ],
     };
   },
+
   watch: {
-    searchQuery(newVal){
+    searchQuery(newVal) {
+      // case-insensitive search
+      const q = newVal.toLowerCase();
       let partial = [];
 
       this.orig_data.forEach(data => {
-        
-        if(data.follows.shop.name.includes(newVal)){
+        if (data.follows.shop.name.toLowerCase().includes(q)) {
           partial.unshift(data);
         }
-      })
+      });
+
       this.follows = partial;
     },
 
-    category(newVal){
-
-      if(newVal === "Any"){
+    category(newVal) {
+      if (newVal === "Any") {
         this.follows = this.orig_data;
         return;
       }
 
       let partial = [];
 
-
       this.orig_data.forEach(data => {
-        let category = JSON.parse(data.follows.shop.category);
-        if(category.includes(newVal)){
+        const category = JSON.parse(data.follows.shop.category);
+        if (category.includes(newVal)) {
           partial.unshift(data);
         }
-      })
+      });
+
       this.follows = partial;
     }
   },
+
+  computed: {
+    // For shops array
+    filteredShops() {
+      return this.shops.filter(shop =>
+        shop.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+    },
+
+    // For follows list (main search)
+    filteredFollows() {
+      if (!this.searchQuery) return this.follows;
+
+      return this.follows.filter(follow =>
+        follow.follows.shop.name
+          .toLowerCase()
+          .includes(this.searchQuery.toLowerCase())
+      );
+    }
+  },
+
   methods: {
-    async goUnfollow(user_id, follower_id){
+    async goUnfollow(user_id, follower_id) {
       const data = new FormData();
       data.append('user_id', user_id);
       data.append('follower_id', follower_id);
 
       const res = await axios.post('/shop/unfollow', data);
-      
-      this.message = "You have successfully unfollow the shop";
+
+      this.message = "You have successfully unfollowed the shop";
 
       setTimeout(() => {
         this.message = "";
       }, 3000);
 
-      if(res.data.message === 'success'){
-        this.follows = this.follows.filter(f => this.removeFollowData(f, user_id, follower_id))
+      if (res.data.message === 'success') {
+        this.follows = this.follows.filter(f => this.removeFollowData(f, user_id, follower_id));
       }
     },
-    removeFollowData(follow, user_id, follower_id){
 
-      console.log('follow: ', follow);
-      console.log('user_id: ', user_id);
-      console.log('follower_id: ', follower_id);
-
-      if(follow){
-        console.log('sulod1');
-        if(follow.user_id === user_id && follow.follower_id === follower_id){
-          console.log('sulod2');
-          return false;
-        }
+    removeFollowData(follow, user_id, follower_id) {
+      if (follow && follow.user_id === user_id && follow.follower_id === follower_id) {
+        return false;
       }
-
       return true;
     },
-    goShop(id){
-      this.$router.push({name: "ShopAbout", params: {id: id}});
+
+    goShop(id) {
+      this.$router.push({ name: "ShopAbout", params: { id } });
     },
-    goLocation(lat, long){
-      console.log(lat + " " + long);
+
+    goLocation(lat, long) {
       const store = useDataStore();
       store.setSelectedCoordinate(lat, long);
-      this.$router.push({name: 'BuyerMap'});
+      this.$router.push({ name: 'BuyerMap' });
     },
-    goMessage(user_id, product = null){
-      console.log("go message");
-      
-      if(product !== null){
-        this.$router.push({name: "BuyerConversation",
-                        params: {"id": user_id},
-                        query: {
-                          name: product.name,
-                          photo: product.photos[0].filename,
-                          product_id: product.id
-                        }});
-      }else{
-        this.$router.push({name: "BuyerConversation", params: {"id": user_id}});
+
+    goMessage(user_id, product = null) {
+      if (product !== null) {
+        this.$router.push({
+          name: "BuyerConversation",
+          params: { id: user_id },
+          query: {
+            name: product.name,
+            photo: product.photos[0].filename,
+            product_id: product.id
+          }
+        });
+      } else {
+        this.$router.push({ name: "BuyerConversation", params: { id: user_id } });
       }
     },
 
-    async returnFollowing(){
-
+    async returnFollowing() {
       const res = await axios.get('/buyer/return-following', {
         params: {
           id: this.store.currentUser_info.id
         }
       });
-      console.log(res.data.message);
+
       this.follows = res.data.message;
       this.orig_data = res.data.message;
     }
   },
-  async mounted(){
-    let path = this.$route.path;
-    let new_path = path.slice(7);
+
+  async mounted() {
+    const path = this.$route.path;
+    const new_path = path.slice(7);
     this.$emit("changepathtext", new_path);
 
     await this.returnFollowing();
-  },
-  computed: {
-    filteredShops() {
-      return this.shops.filter((shop) =>
-        shop.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    },
-  },
+  }
 };
 </script>
+
 
 <style scoped>
 .category-select{

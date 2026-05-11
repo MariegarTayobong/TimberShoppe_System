@@ -123,10 +123,10 @@
                 </template>
             </div>
             <div class="terms">
-                <div class="checkbox">
+                <!-- <div class="checkbox">
                     <input type="checkbox" name="location_access" id="location_access" v-model="formData.location_access" :true-value="'yes'" :false-value="''">
                     <label @click="show_permission = true">Allow location access to the nearest shop.</label>
-                </div>
+                </div> -->
 
                 <div class="checkbox">
                     <input type="checkbox" name="terms" id="terms" v-model="formData.terms" :true-value="'yes'" :false-value="''">
@@ -162,22 +162,7 @@ export default {
             shopInfo: [
                 {label: 'Shop Name', type: 'text', name: 'shop_name', id: 'shop_name' },
                 {label: 'Shop Address', type: 'text', name: 'shop_address', id: 'shop_address' },
-                {
-                    label: 'Shop Category',
-                    type: 'checkbox',
-                    name: 'shop_category',
-                    id: 'shop_category',
-                    options: [
-                        { value: 'Kitchenware', label: 'Kitchenware' },
-                        { value: 'Musical Instrument', label: 'Musical Instrument' },
-                        { value: 'Decorative Items', label: 'Decorative Items' },
-                        { value: 'Games', label: 'Games' },
-                        { value: 'Outdoor Enhancements', label: 'Outdoor Enhancements' },
-                        { value: 'Home Decor', label: 'Home Decor' },
-                        { value: 'Furniture', label: 'Furniture' },
-                        { value: 'Personal accessories', label: 'Personal accessories' },
-                    ]
-                },
+                
                 {label: 'Shop Description', type: 'textarea', name: 'shop_description', id: 'shop_description' },
                 {label: 'Upload Shop Image', type: 'file', name: 'shop_profile', id: 'shop_profile' },
             ],

@@ -7,6 +7,10 @@
             </div>
         </teleport>
 
+        <teleport to="body">
+            <Question_first :question="d.question" :isOpen="isOpen" @close="isOpen=false; d.selected_id = null;" @confirm="confirm()"/>
+        </teleport>
+
         <div class="product-header">
             <form class="product-header" @submit.prevent="goSearch">
                 <div class="search-bar">
@@ -41,10 +45,9 @@
                 <thead>
                     <tr>
                         <th>Product Name</th>
-                        <th>Quantity</th>
                         <th>Category</th>
                         <th>Price</th>
-                        <th>Views</th>
+                        <th>Quantity</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -56,26 +59,27 @@
                 </tr>
                 <tr v-for="item in filteredProducts" :key="item.id" :class="statusClass(item.status)">
                     <td class="name">{{ item.name }}</td>
-                    <td class="qty">{{ item.quantity }}</td>
                     <td class="cat">{{ item.category }}</td>
                     <td class="price">{{ item.price }}</td>
-                    <td class="views">{{ item.total_views }}</td>
+                    <td class="quantity">{{ item.quantity }}</td>
                     <td class="status">{{ item.status }}</td>
                     <td class="action-btn">
                         <div>
+
                             <!-- View button/form -->
                             <i @click="toggleViewProduct(item.id)" class="fa-regular fa-eye view-btn"></i>
                             <div v-if="viewedProductId === item.id" class="toggle-details" :data-product-id="item.id">
                                 <div style="width: 100%; display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
                                     <h3>View Product</h3>
-                                    <button @click="$router.push({name: 'ViewProduct', params: {id: item.id}})" class="btn">Learn more</button>
                                 </div>
+
                                 <div class="image-container">
                                     <button class="nav-btn nav-left"
                                         @click="scrollImages('left', item.id)"
                                         v-if="item.photos.length>3">
                                         <i class="fa fa-chevron-left"></i>
                                     </button>
+
                                     <div class="toggle-img">
                                         <div v-for="image in item.photos"
                                             :key="image"
@@ -87,6 +91,7 @@
                                             </div>
                                         </div>
                                     </div>
+
                                     <button class="nav-btn nav-right"
                                         @click="scrollImages('right', item.id)"
                                         v-if="item.photos.length>3">
@@ -94,33 +99,34 @@
                                     </button>
                                 </div>
 
-                                    <!-- Modal for zoomed image -->
-                                    <div v-if="showZoom" class="modal">
-                                        <div class="modal-content">
-                                            <button class="close-modal-btn" @click="closeZoomModal">
-                                                <i class="fa fa-times" @click.stop="closeZoomModal"></i>
-                                            </button>
-                                            <img :src="'/'+showZoom" alt="Zoomed Image" class="zoomed-image" />
-                                        </div>
+                                <!-- Modal for zoomed image -->
+                                <div v-if="showZoom" class="modal">
+                                    <div class="modal-content">
+                                        <button class="close-modal-btn" @click="closeZoomModal">
+                                            <i class="fa fa-times" @click.stop="closeZoomModal"></i>
+                                        </button>
+                                        <img :src="'/'+showZoom" alt="Zoomed Image" class="zoomed-image" />
                                     </div>
+                                </div>
 
-                                    <div class="view-row">
-                                        <div class="rating">
-                                            <p>Viewer Rating:</p>
-                                            <span
-                                                v-for="star in 5"
-                                                :key="star"
-                                                class="fa fa-star"
-                                                :class="{ checked: star <= item.overall_rate }"
-                                            ></span>
-                                            <span class="rating-text">({{ item.overall_rate }}/5)</span>
-                                        </div>
+                                <div class="view-row">
+                                    <div class="rating">
+                                        <p>Viewer Rating:</p>
+                                        <span
+                                            v-for="star in 5"
+                                            :key="star"
+                                            class="fa fa-star"
+                                            :class="{ checked: star <= item.overall_rate }"
+                                        ></span>
+                                        <span class="rating-text">({{ item.overall_rate }}/5)</span>
+                                    </div>
 
                                     <div class="rating">
                                         <p>Status:</p>
                                         <span>{{ item.status }}</span>
                                     </div>
                                 </div>
+
                                 <div class="comments-section">
                                     <h4>User Comments - ({{ item.reviews.length }} reviews)</h4>
                                     <div class="comments-list">
@@ -164,128 +170,160 @@
                             <!-- edit button/form -->
                             <i class="fa-solid fa-pen-to-square edit-btn"  @click="editProduct(item.id)"></i>
                             <div v-if="editedProductId === item.id" class="toggle-details">
-                                <form method="GET" class="form" @submit.prevent="saveProduct(item.id)">
-                                    <h3>Edit Product</h3>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="name">Product Name</label>
-                                            <input type="text" name="name" id="name" v-model="editingProduct.name">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="price">Price</label>
-                                            <input type="number" name="price" id="price" v-model="editingProduct.price">
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="materials">Product Material</label>
-                                            <input type="text" name="materials" id="materials" v-model="editingProduct.materials">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="quantity">Quantity</label>
-                                            <input type="number" name="quantity" id="quantity" v-model="editingProduct.quantity">
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="category">Category</label>
-                                            <select name="category" id="category" v-model="editingProduct.category">
-                                                <option v-for="category in productCategory" :key="category" :value="category">
-                                                    {{ category }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="status">Status</label>
-                                            <select name="status" id="status" v-model="editingProduct.status">
-                                                <option v-for="currentStatus in productStatus" :key="currentStatus" :value="currentStatus">
-                                                    {{ currentStatus }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
+    <form method="GET" class="form" @submit.prevent="saveProduct(item.id)">
+        <h3>Edit Product</h3>
 
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="dimensions">Product Dimensions</label>
-                                            <input type="text" name="dimensions" id="dimensions" v-model="editingProduct.dimensions">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="weight">Product Weight</label>
-                                            <input type="text" name="weight" id="weight" v-model="editingProduct.weight">
-                                        </div>
-                                    </div>
+        <!-- PRODUCT NAME + PRICE -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="name">Product Name</label>
+                <input 
+                    type="text" 
+                    name="name" 
+                    id="name" 
+                    v-model="editingProduct.name"
+                    style="pointer-events: none; user-select: none; background-color: #f2f2f2;"
+                >
+            </div>
 
-                                    <div class="form-group">
-                                        <label for="product-description">Description</label>
-                                        <textarea
-                                            id="product-description"
-                                            rows="5"
-                                            style="resize: none;"
-                                            v-model="editingProduct.description"
-                                            placeholder="Enter product description..."
-                                        ></textarea>
-                                    </div>
+            <div class="form-group">
+                <label for="price">Price</label>
+                <input 
+                    type="number" 
+                    name="price" 
+                    id="price" 
+                    v-model="editingProduct.price"
+                >
+            </div>
+        </div>
 
-                                    <div class="form-group">
-                                        <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
-                                            <label for="product-description">Photos</label>
-                                            <label style="text-transform: capitalize; cursor: pointer;" for="addphoto">Add photo</label>
-                                        </div>
-                                        <div class="photo-container">
-                                            <div v-for="(img, index) in editingProduct.photos" :key="index" style="position: relative; cursor: pointer;" >
-                                                <img src="../../../images/cancel.png" style="border: none; position: absolute; width: .5em; height: .5em; top: -.3em; right: -.2em;" @click.stop="cancelNotBlob(index, img.id)">
-                                                <img :src="'/'+img.filename" alt="product image">
-                                            </div>
-                                            <div v-for="(img, indx) in new_photo" :key="indx" style="position: relative; cursor: pointer;" >
-                                                <img src="../../../images/cancel.png" style="border: none; position: absolute; width: .5em; height: .5em; top: -.3em; right: -.2em;" @click.stop="cancelBlob(indx)">
-                                                <img :src="img.preview" alt="product image">
-                                            </div>
-                                            <input type="file" hidden id="addphoto" @change="handleFileUpload" accept="image/*">
-                                        </div>
-                                    </div>
+        <!-- MATERIALS + STATUS -->
+        <div class="form-row">
+            <div class="form-group">
+                <label for="category">Category</label>
 
-                                    <div v-if="message" :class="['message', messageType]">
-                                        {{ message }}
-                                    </div>
+                <input  
+                    type="text" 
+                    :value="editingProduct.category"
+                    readonly
+                    style="pointer-events: none; user-select: none; background-color: #f2f2f2;"
+                >
+            </div>
 
-                                    <div class="form-group" style="padding-bottom: 30px;">
-                                        <button type="submit" class="btn" style=" padding: .5em; background-color: aliceblue; color: #6c757d;">Save Changes</button>
-                                        <button type="button" @click="cancelEdit"  class="btn" style="margin-left: 10px; background-color: #6c757d; padding: .5em; color: white;">Cancel</button>
-                                    </div>
-                                </form>
-                            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select name="status" id="status" v-model="editingProduct.status">
+                    <option 
+                        v-for="currentStatus in productStatus" 
+                        :key="currentStatus" 
+                        :value="currentStatus"
+                    >
+                        {{ currentStatus }}
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <!-- CATEGORY (PLAIN TEXT, NO DROPDOWN) -->
+
+        <div class="form-group">
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" name="quantity" id="quantity" v-model="editingProduct.quantity">
+            </div>
+        </div>
+        
+
+        <!-- DESCRIPTION -->
+        <div class="form-group">
+            <label for="product-description">Description</label>
+            <textarea
+                id="product-description"
+                rows="5"
+                style="resize: none;"
+                v-model="editingProduct.description"
+                placeholder="Enter product description..."
+            ></textarea>
+        </div>
+
+        <!-- PHOTOS -->
+        <div class="form-group">
+            <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="product-description">Photos</label>
+                <label style="text-transform: capitalize; cursor: pointer;" for="addphoto">Add photo</label>
+            </div>
+
+            <div class="photo-container">
+                <div v-for="(img, index) in editingProduct.photos" :key="index" style="position: relative; cursor: pointer;">
+                    <img src="../../../images/cancel.png" 
+                         style="border: none; position: absolute; width: .5em; height: .5em; top: -.3em; right: -.2em;" 
+                         @click.stop="cancelNotBlob(index, img.id)">
+                    <img :src="'/'+img.filename" alt="product image">
+                </div>
+
+                <div v-for="(img, indx) in new_photo" :key="indx" style="position: relative; cursor: pointer;">
+                    <img src="../../../images/cancel.png" 
+                         style="border: none; position: absolute; width: .5em; height: .5em; top: -.3em; right: -.2em;" 
+                         @click.stop="cancelBlob(indx)">
+                    <img :src="img.preview" alt="product image">
+                </div>
+
+                <input type="file" hidden id="addphoto" @change="handleFileUpload" accept="image/*">
+            </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div v-if="message" :class="['message', messageType]">
+            {{ message }}
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="form-group" style="padding-bottom: 30px;">
+            <button type="submit" class="btn" style=" padding: .5em; background-color: aliceblue; color: #6c757d;">Save Changes</button>
+            <button type="button" @click="cancelEdit"  class="btn" style="margin-left: 10px; background-color: #6c757d; padding: .5em; color: white;">Cancel</button>
+        </div>
+    </form>
+</div>
+
 
                             <i class="fa-solid fa-trash delete-btn"
                                 v-if="canDelete(item.status)"
-                                @click="deleteProduct(item.id)">
+                                @click="d.selected_id = item.id; isOpen = true;">
                             </i>
                         </div>
                     </td>
                 </tr>
             </tbody>
+
             <h3 style="color: red; font-size: 1.3em; margin: 1em;" v-if="allProducts === null">No results</h3>
+
             <div class="loading-container" v-if="is_loading">
                 <img src="../../../images/kOnzy.gif" style="width: 200px; height: 200px;">
             </div>
         </table>
 
-        <!-- Overlay background when toggle-details are displayed -->
         <div v-if="viewedProductId || editedProductId" class="overlay-background"></div>
     </div>
 </div>
 </template>
 
+
 <script>
 import { useDataStore } from '../../stores/dataStore';
 import axios from 'axios';
 import AttachVideo from '../modal/AttachVideo.vue';
+import Question_first from '../../modal_global/Question_first.vue';
 
 
 export default {
-    components: {AttachVideo},
+    components: {AttachVideo, Question_first},
     data() {
         return {
+            d: {
+                question: "Do you really want to delete this product?",
+                selected_id: null,
+            },
+            isOpen: false,
             search: {
                 text: "",
                 status: "",
@@ -324,11 +362,10 @@ export default {
                 'Furniture',
                 'Kitchenware',
                 'Musical Instrument',
-                'Toys & Games',
-                'Office Supplies',
-                'Home Decor',
-                'Personal accessories',
-                'Outdoor enhancements'
+                'Boardgames',
+                'Sculpture',
+                'Home Decorations',
+                'Souvenir',
             ],
 
 
@@ -367,6 +404,11 @@ export default {
         }
     },
     methods: {
+        confirm(){
+
+            this.deleteProduct(this.d.selected_id);
+            this.isOpen = false;
+        },
         returnformatTime(date){
             return new Date(date).toLocaleDateString();
         },
@@ -456,6 +498,8 @@ export default {
 
             }
             this.is_overlay_loading = false;
+            
+            this.d.selected_id = null;
         },
         updateScrollableClass() {
             this.$nextTick(() => {
@@ -947,12 +991,11 @@ export default {
 
 .product-table th:last-child {
     border-top-right-radius: 1em;
-    width: 14.8%;
 }
+
 .product-table td {
     border: 1px solid #ffffffc7;
     outline: none;
-    padding: 0.9em 1em; /* match th padding */
     vertical-align: middle; /* center cell content vertically */
     text-align: center; /* default left alignment for text cells */
 }
@@ -1412,6 +1455,9 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .product-table th:last-child{
+        width: 14.8%;
+    }
     .product-container {
         padding: 1.5em;
         gap: 2em;

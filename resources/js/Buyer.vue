@@ -3,20 +3,22 @@
     <ProfileModal v-if="show_profile" @goexit="goexit" @changepathtext="changepathtext" @stopLocation="stopLocation"/>
     <BuyerNotification v-if="show_notify" @goexit="goexit" @changepathtext="changepathtext" @modifyseen="modifyseen" :notifications="notifications"/>
     <header :class="{hidden: ishidden}">
-      <div class="header1" style="cursor: pointer;" @click="show_profile = !show_profile; show_notify = false;">
+      <div class="header1">
         <div class="profile-pic">
           <img :src="'/'+store.currentUser_info.profile">
 
         </div>
-        <div class="profile-info" style="cursor: pointer;">
-          <label style="cursor: pointer;">{{ user.name }}</label>
-          <label style="cursor: pointer;">{{ user.email }}</label>
+        <div class="profile-info">
+          <label>{{ user.name }}</label>
+          <label>{{ user.email }}</label>
         </div>
-        <img src="../images/arrow-down.png" class="arrow-down" :class="{reverseArrow : show_profile}">
+        
       </div>
       <div class="header2">
-        <img src="../images/logo.png" class="bell-icon">
+        
         <img src="../images/maps-and-flags.png" class="locate-icon" @click="locateCurrent">
+
+        <img src="../images/add-to-cart.png" style="width: 40px; height: 40px; cursor: pointer;" @click="goViewAddTocart">
 
         <img :src="bell_type" class="bell-icon" style="cursor: pointer" @click="show_notify = !show_notify; show_profile = false;">
       </div>
@@ -150,6 +152,12 @@ export default {
       this.messageListener = null;
     },
     methods: {
+
+      goViewAddTocart(){
+
+        console.log('view add to cart');
+        this.$router.push({name: 'ListAddToCart'});
+      },
 
       checkNotify(){
         for(let notify of this.notifications){

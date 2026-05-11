@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\NotifyEvent;
 use App\Events\SellerNotifyEvent;
 use Illuminate\Database\Eloquent\Model;
 
@@ -61,6 +62,42 @@ class Notification extends Model
                 $this->product_id = $product_id;
                 $this->type = "customer record";
                 $this->status = "pending";
+            }
+            else if($type === 'checkout'){
+
+                $this->text = "$sender->name has checkout an item. Check your orders page";
+                $this->product_id = $product_id;
+                $this->type = "Checkout";
+            }
+            else if($type === 'delivered'){
+
+                $this->text = "$sender->name has fulfilled an item that you ordered.";
+                $this->product_id = $product_id;
+                $this->type = "Checkout";
+
+                if($this->save()){
+                
+                    broadcast(new NotifyEvent($receiver->id, 'specify'));
+
+                    return 'successful';
+                }
+
+                return 'successful';
+            }
+            else if($type === "cancel delivered"){
+
+                $this->text = "$sender->name has cancel the item that you ordered.";
+                $this->product_id = $product_id;
+                $this->type = "Checkout";
+
+                if($this->save()){
+                
+                    broadcast(new NotifyEvent($receiver->id, 'specify'));
+
+                    return 'successful';
+                }
+
+                return 'successful';
             }
 
             if($this->save()){

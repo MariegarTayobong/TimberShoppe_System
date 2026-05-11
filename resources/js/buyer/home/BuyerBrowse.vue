@@ -5,27 +5,40 @@
         <label style="font-weight: bolder;">BROWSE</label>
     </div>
     <label class="header-title">{{ $route.params.name}}s</label>
-    <form @submit.prevent="returnSearchProducts">
+    <form @submit.prevent="searchProductByName">
       <div class="filter-search-browse">
-        <select v-model="search_info.category">
-            <option value="" disabled>Category</option>
-            <option value="Any" disabled>Any</option>
+        
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;"> 
+          <input placeholder="Search product name ..." v-model="search_text">
+          <input type="submit" style="background-color: green; border: 1px solid green; color: white; width: 100px;">
+        </div>
+
+
+        <div  style="display: flex; flex-direction: row; gap: 10px;">
+          <select v-model="price_range">
+            <option value="" disabled>Price range</option>
+            <!-- <option value="Any" disabled>Any</option>
             <option value="Furniture">Furniture</option>
             <option value="Kitchenware">Kitchenware</option>
             <option value="Musical Instrument">Musical Instrument</option>
             <option value="Office Supplies">Office Supplies</option>
             <option value="Toys and Games">Toys and Games</option>
             <option value="Outdoor enhancements">Outdoor enhancements</option>
-            <option value="Personal accessories">Personal accessories</option>
-            <option value="Home Decor">Home Decor</option>
-        </select>
-        <select v-model="search_info.filter">
-            <option value="" disabled>Filter</option>
-            <option value="Popular">Popular</option>
-            <option value="New">New</option>
-        </select>
-        <input placeholder="Search product name ..." v-model="search_text">
-        <img src="../../../images/cancel (1).png" style="width: 10px; height: 10px; margin-left: 5px;">
+            <option value="Personal accessories">Pesonal accessories</option>
+            <option value="Home Decor">Home Decor</option> -->
+            <option value="cheap">Lowest price</option>
+            <option value="expensive">Highest price</option>
+          </select>
+          <!-- <select v-model="search_info.filter">
+              <option value="" disabled>Filter</option>
+              <option value="Popular">Popular</option>
+              <option value="New">New</option>
+          </select> -->
+          <div style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
+            <input type="checkbox" v-model="nearby_shops">
+            <label style="font-size: 17px; display: flex; justify-content: start;">Nearby(shops)</label>
+          </div>
+        </div>
       </div>
     </form>
     <div class="buyer-browse-header">
@@ -44,16 +57,30 @@
             </div>
             <div class="item-pic">
               <img :src="'/'+product.photos[0].filename" @click="goProduct(product)">
+              <div style="position: absolute; right: 0; bottom: 0;">
+                <img src="../../../images/verify.png" style="width: 30px; height: 30px;" v-if="product.shop.is_verified === 'verified'">
+              </div>
             </div>
             <div class="item-info" @click="goProduct(product)">
               <div class="item-rate">
-                <img src="../../../images/star.png" class="star-rate" v-for="turn in returnStar('whole',product.overall_rate)" :key="turn">
-                <img src="../../../images/half-star.png" class="star-rate" v-for="turn in returnStar('half',product.overall_rate)" :key="turn">
-                <img src="../../../images/no-star.png" class="star-rate" v-for="turn in returnStar('none',product.overall_rate)" :key="turn">
-                <label>{{ product.overall_rate }}</label>
+                <div>
+                  <img src="../../../images/star.png" class="star-rate" v-for="turn in returnStar('whole',product.overall_rate)" :key="turn">
+                  <img src="../../../images/half-star.png" class="star-rate" v-for="turn in returnStar('half',product.overall_rate)" :key="turn">
+                  <img src="../../../images/no-star.png" class="star-rate" v-for="turn in returnStar('none',product.overall_rate)" :key="turn">
+                  <label>{{ product.overall_rate }}</label>
+                </div>
               </div>
+              <div>
+                  <label
+                   :style="{backgroundColor: returnColorStatus(product.status)}"
+                   style="color: white; padding: 5px; font-size: 8px; border-radius: 10px; font-weight: bolder;"
+                  >{{ product.status }}</label>
+                </div>
               <div class="item-comment">
                 <label>{{ countProductReviews(product.reviews) }} review/s</label>
+                <div>
+                  <label style="font-weight: bolder;">{{ product.quantity }} stock</label>
+                </div>
               </div>
               <div class="item-shopname">
                 <label>{{ product.name }}</label>
@@ -77,9 +104,14 @@
 
 <script>
 import { useDataStore } from '../../stores/dataStore';
+import { watch } from 'vue';
+
 export default {
     data(){
         return{
+            store: useDataStore(),
+            nearby_shops: '',
+            price_range: '',
             loading: true,
             products: {
               name: "Wood Bed",
@@ -103,7 +135,127 @@ export default {
                 }
         }
     },
+    watch: {
+
+      nearby_shops(newval){
+
+        console.log('value soy: ', newval);
+        if(newval){
+
+          this.detectNearbyShops();
+        }
+        else{
+
+          this.returnSearchProducts();
+        }
+      },
+
+      'price_range'(newval){
+
+        if(this.products.length > 0){
+
+          if(newval === 'cheap'){
+
+            this.products = this.products.sort((a, b) => a.price - b.price);
+          }
+          else{
+
+            this.products = this.products.sort((a, b) => b.price - a.price);
+          }
+        }
+      }
+    },
     methods: {
+
+      returnColorStatus(status) {
+
+        if(status === 'Out of Stock') {
+
+          return 'red';
+        }
+        else {
+
+          return 'green';
+        }
+      },
+
+      checkNearbyShops(lat, long){
+
+        this.loading = true;
+
+        if(this.products){
+
+          console.log('products soy: ', this.products);
+
+          let data = [];
+
+          const userLatLng = L.latLng(lat, long);
+
+          console.log(`lat: ${lat}, long: ${long}`);
+
+        
+          this.products.forEach(product => {
+
+            console.log(`product: ${product.shop}`);
+
+            const shopLatLng = L.latLng(product.shop.latitude, product.shop.longitude);
+
+            const distance = userLatLng.distanceTo(shopLatLng);
+
+            if(distance <= this.store.currentUser_info.nearby_km * 1000){
+
+              product.distance = distance;
+              data.push(product)
+            }
+          });
+
+          this.products = data.sort((a, b) => a.distance - b.distance);
+        }
+
+        this.loading = false;
+      },
+
+      detectNearbyShops(){
+
+        console.log('locate');
+        if (!navigator.geolocation) {
+          alert("Geolocation is not supported by your browser.")
+          return
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+
+            this.checkNearbyShops(position.coords.latitude, position.coords.longitude);
+          },
+          (error) => {
+
+            alert("Unable to retrieve your location. You may have denied permission.")
+            console.error(error)
+          },
+          {
+
+            enableHighAccuracy: true,
+            maximumAge: 1000,     // Accept cached position max 1 second old
+            timeout: 10000        // Timeout for getting position
+          }
+        )
+      },
+      async searchProductByName(){
+
+        this.loading = true;
+
+        const data = new FormData();
+        data.append('name', this.search_text);
+
+        const res = await axios.post('/buyer/search-product/by-name', data);
+
+        console.log('res data p: ', res.data.products);
+
+        this.products = res.data.products;
+
+        this.loading = false;
+      },
       countProductReviews(reviews){
 
         console.log('reviews: ', reviews);
@@ -205,6 +357,16 @@ export default {
       window.scrollTo(0, 0);
       this.initialize_params();
       this.returnSearchProducts();
+
+
+
+      watch(
+        () => this.store.nearbyShops,
+        (newshop) => {
+          this.store.nearbyShops = newshop;
+          console.log('nearby soooooooooooooooooy: ', this.store.nearbyShops)
+        }
+      )
     }
 }
 </script>
@@ -292,7 +454,7 @@ export default {
 .item-comment{
   color: gray;
   font-size: 12px;
-  text-decoration: underline;
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
 }
 .item-rate{
   display: flex;
@@ -318,7 +480,7 @@ export default {
 .filter-search-browse select{
     padding: 5px;
     font-size: 10px;
-    width: 70px;
+    width: 100px;
     border: 1px solid #D25E27;
 }
 .filter-search-browse input{
@@ -330,8 +492,8 @@ export default {
 }
 .filter-search-browse{
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: start;
     padding-left: 20px; padding-right: 20px; padding-top: 5px; padding-bottom: 5px;
     gap: 5px;
     border-bottom: 1px solid rgb(188, 188, 188);

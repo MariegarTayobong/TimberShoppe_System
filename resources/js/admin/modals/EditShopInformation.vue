@@ -96,12 +96,11 @@ export default {
 
         console.log(res.data.message);
         if(res.data.message === 'success'){
-          window.alert("YOU HAVE SUCCESSFULLY EDITED THE INFORMATION OF A SELLER'S SHOP.");
 
           this.$emit('save_close');
         }
         else{
-            window.alert("SOMETHING WENT WRONG! PLEASE RELOAD THE PAGE.");
+
         }
 
       } catch (err) {

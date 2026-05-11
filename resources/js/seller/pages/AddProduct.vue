@@ -8,7 +8,7 @@
         <div class="header">
             <h1>Add New Product</h1>
             <router-link to="/seller/products">
-                <button class="return-btn">Return to Products</button>
+                <button class="return-btn">Back</button>
             </router-link>
         </div>
 
@@ -184,11 +184,10 @@ export default {
                 'Furniture',
                 'Kitchenware',
                 'Musical Instrument',
-                'Toys & Games',
-                'Office Supplies',
-                'Home Decor',
-                'Personal accessories',
-                'Outdoor enhancements'
+                'Boardgames',
+                'Souvenir',
+                'Home Decorations',
+                'Sculpture',
             ],
             productData: {
                 name: '',
@@ -196,7 +195,7 @@ export default {
                 category: '',
                 status: '',
                 price: '',
-                quantity: '',
+                quantity: 0,
                 images: [],
                 materials: '',
                 dimensions: '',
@@ -383,12 +382,12 @@ export default {
                 return false;
             }
 
-            if (!this.productData.quantity || this.productData.quantity < 0) {
-                if (typeof this.showMessage === 'function') {
-                    this.showMessage('Please enter a valid quantity', 'error');
-                }
-                return false;
-            }
+            // if (!this.productData.quantity || this.productData.quantity < 0) {
+            //     if (typeof this.showMessage === 'function') {
+            //         this.showMessage('Please enter a valid quantity', 'error');
+            //     }
+            //     return false;
+            // }
 
             if (!this.productData.images || this.productData.images.length === 0) {
                 if (typeof this.showMessage === 'function') {

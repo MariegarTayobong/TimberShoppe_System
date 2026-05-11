@@ -72,6 +72,11 @@ export default {
             this.$router.push({name: 'BuyerProduct', params: {id: notif.products.id}});
             this.$emit("goexit");
             break;
+          case 'Checkout':
+            this.store.setSelectedProduct(notif.products);
+            this.$router.push({name: 'BuyerProduct', params: {id: notif.products.id}});
+            this.$emit("goexit");
+            break;
           case 'message':
             this.$router.push({name: 'BuyerConversation', params: {id: notif.users.id}});
             this.$emit("goexit");

@@ -6,7 +6,9 @@
         <img :src="'/'+this.store.currentUser_info.profile">
       </div>
 
-
+      <teleport to="body">
+        <Question_first :question="question" :isOpen="isOpen" @close="isOpen=false; act_type='';" @confirm="confirm()"/>
+      </teleport>
 
 
       <header>
@@ -41,6 +43,11 @@
                 <img src="../../../images/cancel (1).png" style="width: 10px; height: 10px;" v-if="edit_info.includes('contact')" @click="cancelEdit('contact')">
                 <label class="change-text" @click="addEditInfo('contact')" v-else>Change</label>
               </div>
+              <label>Current Address: </label><input type="text" v-model="user_info.current_address" :disabled="!edit_info.includes('current_address')">
+              <div>
+                <img src="../../../images/cancel (1).png" style="width: 10px; height: 10px;" v-if="edit_info.includes('current_address')" @click="cancelEdit('current_address')">
+                <label class="change-text" @click="addEditInfo('current_address')" v-else>Change</label>
+              </div>
               <label>Nearby Shop (km): </label><input type="number" v-model="user_info.nearby_km" :disabled="!edit_info.includes('nearby_km')">
               <div>
                 <img src="../../../images/cancel (1).png" style="width: 10px; height: 10px;" v-if="edit_info.includes('nearby_km')" @click="cancelEdit('nearby_km')">
@@ -72,22 +79,25 @@
         </div>
       </main>
 
-      <main class="main1">
-        <label style="margin-top: 10px; margin-bottom: 10px;">Account Setting</label>
-        <label class="label-setting" @click="$router.push({name: 'AccountSetting'})" style="color: yellowgreen;">Deactivate Account</label>
-        <label class="label-setting" @click="$router.push({name: 'DeleteAccount'})" style="color: red;">Delete Account</label><br>
-        <label class="label-setting" @click="goLogout()">Logout</label>
-      </main>
+      <label class="label-setting" @click="askLogout()">Logout</label>
   </div>
 </template>
 
+<!-- <label class="label-setting" @click="$router.push({name: 'AccountSetting'})" style="color: yellowgreen;">Deactivate Account</label>
+<label class="label-setting" @click="$router.push({name: 'DeleteAccount'})" style="color: red;">Delete Account</label><br> -->
+
 <script>
 import { useDataStore } from '../../stores/dataStore';
+import Question_first from '../../modal_global/Question_first.vue';
 
 export default {
+  components: {Question_first},
   data(){
     return{
       valid_password: true,
+      question: '',
+      act_type: '',
+      isOpen: false,
       message_text: "",
       show_profile: false,
       profile: {
@@ -104,6 +114,7 @@ export default {
         birthday: '',
         age: 0,
         contact_no: '',
+        current_address: '',
         nearby_km: 0,
       },
       store: useDataStore(),
@@ -125,6 +136,45 @@ export default {
     }
   },
   methods: {
+    askLogout() {
+
+        this.question = "DO YOU REALLY WANT TO LOGOUT";
+        this.act_type = '';
+
+        this.isOpen = true;
+    },
+    askDeactivate(){
+
+      this.question = "DO YOU REALLY WANT TO DEACTIVATE YOUR ACCOUNT?";
+      this.act_type = 'deactivate';
+
+      this.isOpen = true;
+    },
+    askDelete(){
+
+      this.question = "DO YOU REALLY WANT TO DELETE YOUR ACCOUNT?";
+      this.act_type = 'delete';
+
+      this.isOpen = true;
+    },
+
+    confirm() {
+
+      if(this.act_type === 'deactivate'){
+
+        this.$router.push({name: 'AccountSetting'})
+      }
+      else if(this.act_type === 'delete'){
+
+        this.$router.push({name: 'DeleteAccount'})
+      }
+      else{
+
+        this.goLogout();
+      }
+
+      this.isOpen = false;
+    },
     goLogout(){
         const store = useDataStore();
         const id = store.currentUser_info.id;

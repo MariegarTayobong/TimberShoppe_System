@@ -179,6 +179,14 @@ export default {
                                        }
                     })
                     break;
+                case 'Checkout':
+                    this.store.setSelectedProduct(notify.products);
+                    this.$router.push({name: 'BuyerProduct',
+                                       params: {
+                                        id: notify.products.id
+                                       }
+                    })
+                    break;
                 case 'customer record':
                     console.log('product id: ', notify.products.id);
                     console.log('NOTIFY: ',notify);

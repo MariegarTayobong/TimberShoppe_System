@@ -22,8 +22,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
-//REMEMBER SOY IMOHA LOGIC, ANG ADMIN OTP MA DELETE TANAN IF MAKA SULOD SIYA SA ADMIN HOME. NOT A GOOD SOLUTION BUT WELL WELL WELL...
-
 Route::get('/', function () {
     Otp::query()->delete();
     Pendingshop::query()->delete();
@@ -91,6 +89,10 @@ Route::middleware('buyercheck')->group(function() {
         return view('buyer_pages.buyer_home');
     });
 
+    Route::get('/buyer/list/add-to-cart', function() {
+        return view('buyer_home');
+    });
+
     //return shops that are searched
     Route::post("/buyer/search-shop", [BuyerController::class, "searchShops"]);
     //return shop profile info
@@ -154,6 +156,20 @@ Route::middleware('buyercheck')->group(function() {
     Route::post('/buyer/deactivate', [BuyerController::class, "buyer_deactivate"]);
     //buyer delete account
     Route::post('/buyer/delete-account', [BuyerController::class, "buyer_delete_account"]);
+    //buyer search product by name
+    Route::post('/buyer/search-product/by-name', [BuyerController::class, "buyer_searchProduct_byname"]);
+    //buyer add to cart
+    Route::post('/buyer/add-to/cart', [BuyerController::class, "buyer_addtocart"]);
+    //return all add to cart list
+    Route::post('/buyer/return/add-tocart', [BuyerController::class, "buyer_return_addtocart"]);
+    //checkout buyer
+    Route::post('/buyer/checkout', [BuyerController::class, "checkout_buyer"]);
+    //delete cart
+    Route::post('/buyer/delete/cart', [BuyerController::class, "delete_cart"]);
+    //direct checkout
+    Route::post('/buyer/direct-checkout', [BuyerController::class, 'direct_checkout']);
+    Route::post('/buyer/return-checkedout', [BuyerController::class, 'returnCheckedout']);
+    Route::post('/buyer/checkout/added-cart', [BuyerController::class, "checkout_added_cart"]);
 
     //LOGOUT
     Route::get('/buyer/logout', function(Request $request) {
@@ -306,7 +322,7 @@ Route::middleware('usercheck')->group(function() {
     Route::get('/seller/{p}/{c?}/{id?}', function(){
 
         return view('seller_pages.seller_home');
-    })->whereIn("p", ['dashboard', 'home', 'profile', 'messages', 'map', 'followers', 'products', 'product', 'notifications', 'transaction-record', 'add-record'])
+    })->whereIn("p", ['dashboard', 'home', 'profile', 'messages', 'map', 'followers', 'products', 'product', 'notifications', 'transaction-record', 'add-record', 'order-list'])
       ->whereIn("c", ["add", "view", 'chats'])
       ->where('id', '[A-Za-z0-9]+');//put all the components in the 2nd parameter in whereIn
 
@@ -365,8 +381,15 @@ Route::middleware('usercheck')->group(function() {
     Route::post('/seller/record/delete', [SellerController::class, 'deleteRecord']);
     //seller attach video
     Route::post('/seller/attach-video', [SellerController::class, 'attach_video']);
+    //seller change shop location
+    Route::post('/seller/update-location', [SellerController::class, 'seller_change_location']);
+    Route::post('/seller/return-all/orders', [SellerController::class, 'seller_return_orders']);
+    Route::post('/seller/ship-order', [SellerController::class, "seller_shipOrder"]);
+    Route::post('/seller/cancel-order', [SellerController::class, "seller_cancelOrder"]);
+    Route::post('/seller/go-verified', [SellerController::class, "seller_goVerified"]);
+    Route::post('/seller/item-delivered', [SellerController::class, "seller_itemDelivered"]);
+    Route::post('/seller/remove-order', [SellerController::class, "seller_removeOrder"]);
     
-
     Route::get('/seller/logout', function(Request $request) {
 
         $id = (int) $request->id;
@@ -379,7 +402,7 @@ Route::middleware('usercheck')->group(function() {
         }
 
         $user->is_active = false;
-        $user->time_logout = now();
+        $user->time_logout = now()->setTimezone('Asia/Manila');
 
         if($user->save()){
             broadcast(new ActiveEvent());
@@ -433,7 +456,9 @@ Route::middleware('admin_check')->group(function () {
                         'view-product',
                         'manage-reviews',
                         'map',
-                        'notifications'
+                        'notifications',
+                        'manage-products',
+                        'verify-lists'
                     ])->name('admin_home');
 
     Route::get('/admin/logout', function(Request $req) {
@@ -487,6 +512,12 @@ Route::middleware('admin_check')->group(function () {
     Route::post('/admin/mark-all-read/notif', [AdminController::class, "admin_mark_all_read_notif"]);
     //return data for dashboard
     Route::get('/admin/return-data/dashboard', [AdminController::class, "admin_returnData_dashboard"]);
+    //return products
+    Route::get('/admin/return/all-products', [AdminController::class, "admin_returnProducts"]);
+    //return account verify
+    Route::get('/admin/return-verify/accounts', [AdminController::class, "return_accountVerify"]);
+    //verify account
+    Route::post('/admin/verify-account', [AdminController::class, "verify_account"]);
 });
 
 Route::post('/admin/verify-otp', function(Request $req){

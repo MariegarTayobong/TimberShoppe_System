@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- <button @click="showlocation()">Show location</button> -->
-    <div id="map">
+    <div id="maps">
       <div class="locate-header">
         <div class="locate-btn" @click="goLocateShop">
           <img src="../../../images/placeholder.png">
@@ -20,7 +20,7 @@ export default {
   data() {
     return {
       store: useDataStore(),
-      map_object: null,
+      map_object_2: null,
       shop_marker: null,
       lat: null,
       long: null,
@@ -28,8 +28,8 @@ export default {
   },
   methods: {
     goLocateShop() {
-      if (this.map_object && this.shop_marker) {
-        this.map_object.setView([this.lat, this.long], 15, {
+      if (this.map_object_2 && this.shop_marker) {
+        this.map_object_2.setView([this.lat, this.long], 15, {
           animate: true,
           duration: 1
         });
@@ -50,7 +50,7 @@ export default {
         L.DomUtil.setPosition(this._container, pos.add(anchor));
       };
 
-      this.map_object = L.map('map', {
+      this.map_object_2 = L.map('maps', {
         center: [9.0753, 125.5126],
         zoom: 13,
         maxZoom: 19,
@@ -61,7 +61,7 @@ export default {
         attribution: 'Tiles &copy; Esri — Sources: Esri, Garmin, USGS, etc.',
         maxZoom: 19,
         minZoom: 3,
-      }).addTo(this.map_object);
+      }).addTo(this.map_object_2);
 
       this.lat = this.store.currentUser_info.shop.latitude;
       this.long = this.store.currentUser_info.shop.longitude;
@@ -69,7 +69,7 @@ export default {
       const address = this.store.currentUser_info.shop.address;
 
       this.shop_marker = L.marker([this.lat, this.long])
-        .addTo(this.map_object)
+        .addTo(this.map_object_2)
         .bindPopup(`
           <strong>YOUR SHOP</strong><br>
           <strong style='color: #D25E27;'>${shop_name}</strong><br>
@@ -92,7 +92,7 @@ export default {
 </script>
 
 <style scoped>
-#map{
+#maps{
   position: relative;
   top: 0;
   left: 0;
@@ -136,7 +136,7 @@ export default {
 
 /* Small mobile devices */
 @media (max-width: 480px) {
-    #map {
+    #maps {
         height: calc(100vh - 120px);
     }
 
@@ -163,7 +163,7 @@ export default {
 
 /* Mobile - Medium devices */
 @media (max-width: 768px) {
-    #map {
+    #mapd {
         height: calc(100vh - 100px);
     }
 
@@ -190,7 +190,7 @@ export default {
 
 /* Tablet devices */
 @media (min-width: 769px) and (max-width: 1024px) {
-    #map {
+    #maps {
         height: calc(100vh - 80px);
     }
 
@@ -217,7 +217,7 @@ export default {
 
 /* Desktop devices */
 @media (min-width: 1025px) {
-    #map {
+    #maps {
         height: calc(100vh - 60px);
     }
 
@@ -244,7 +244,7 @@ export default {
 
 /* Large desktop devices */
 @media (min-width: 1440px) {
-    #map {
+    #maps {
         height: calc(100vh - 40px);
     }
 
@@ -271,7 +271,7 @@ export default {
 
 /* Landscape orientation for mobile */
 @media (max-width: 768px) and (orientation: landscape) {
-    #map {
+    #maps {
         height: calc(100vh - 80px);
     }
 
@@ -304,7 +304,7 @@ export default {
 
 /* Print styles */
 @media print {
-    #map {
+    #maps {
         height: 500px;
         border: 1px solid #000;
     }

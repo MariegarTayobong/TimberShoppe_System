@@ -53,13 +53,13 @@
                 <th>Name</th>
                 <th>Product ID</th>
                 <th>Product Name</th>
-                <th>Description</th>
+                <!-- <th>Description</th>
                 <th>Materials</th>
                 <th>Dimensions</th>
-                <th>Weight</th>
+                <th>Weight</th> -->
                 <th>Status</th>
                 <th>Date</th>
-                <th>Action</th>
+                <!-- <th>Action</th> -->
                 </tr>
             </thead>
             <tbody v-if="products ? products.length > 0 : false">
@@ -71,15 +71,15 @@
                   <td>{{ product.name }}</td>
                   <td>{{ product.product_id }}</td>
                   <td>{{ product.product.name }}</td>
-                  <td>{{ product.product.description }}</td>
+                  <!-- <td>{{ product.product.description }}</td>
                   <td>{{ product.product.materials }}</td>
                   <td>{{ product.product.dimensions }}</td>
-                  <td>{{ product.product.weight }}</td>
+                  <td>{{ product.product.weight }}</td> -->
                   <td>{{ product.status }}</td>
                   <td>{{ formatDate(product.created_at) }}</td>
-                  <td class="action-btn">
+                  <!-- <td class="action-btn">
                       <button class="btn-delete" @click="confirmDelete(product.id)">Delete</button>
-                  </td>
+                  </td> -->
                   </tr>
                   <tr v-if="filteredProducts.length === 0">
                   <td colspan="10" class="no-data">No results found.</td>

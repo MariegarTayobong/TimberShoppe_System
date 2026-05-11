@@ -68,7 +68,7 @@
                 :disabled="Object.keys(this.errors).length > 0"
                 >Login
             </button>
-            <router-link to="/admin" class="admin-btn form-btn">Login as Admin</router-link>
+            
         </form>
     </div>
 </template>

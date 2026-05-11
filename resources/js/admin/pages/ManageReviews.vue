@@ -1,6 +1,8 @@
 <template>
   <div class="manage-reviews-page">
 
+    <MessageNotify :message="message" :title="title"/>
+
     <teleport to="body">
       <div class="overlay" v-if="is_overlay_loading">
           <img src="../../../images/kOnzy.gif">
@@ -50,27 +52,6 @@
       </div>
     </div>
 
-    <!-- FILTER BAR -->
-    <div class="filter-bar">
-      <input type="text" v-model="search_data.name" placeholder="🔍 Search reviews based on ..." class="filter-input search-input"/>
-      <select class="filter-select" v-model="search_data.type">
-        <option value="">All Types</option>
-        <option value="shop">Shop</option>
-        <option value="seller">Buyer</option>
-        <option value="product">Product</option>
-      </select>
-      <select class="filter-select" v-model.number="search_data.rate">
-        <option value="0">All Ratings</option>
-        <option value="1">1★</option>
-        <option value="2">2★</option>
-        <option value="3">3★</option>
-        <option value="4">4★</option>
-        <option value="5">5★</option>
-      </select>
-      <button class="filter-btn" @click="applyFilters">Filter</button>
-      <button class="filter-btn clear" @click="clearFilters">Clear</button>
-    </div>
-
     <!-- REVIEWS TABLE -->
     <div class="reviews-table-container">
       <table class="reviews-table">
@@ -116,11 +97,14 @@
 import axios from "axios";
 import ReviewSeeMore from "../modals/ReviewSeeMore.vue";
 import Question from "../modals/Question.vue";
+import MessageNotify from "../modals/MessageNotify.vue";
 
 export default {
-  components: {ReviewSeeMore, Question},
+  components: {ReviewSeeMore, Question, MessageNotify},
   data() {
     return {
+      message: '',
+      title: '',
       is_overlay_loading: false,
       showModal: false,
       show_question: false,
@@ -147,6 +131,12 @@ export default {
     };
   },
   methods: {
+
+    closed(){
+
+      this.message = "";
+      this.title = "";
+    },
 
     askUnblock(review){
 
@@ -180,7 +170,8 @@ export default {
 
         if(res.data.message === 'success'){
 
-          window.alert('YOU HAVE SUCCESSFULLY DELETED THE REVIEW');
+          this.title = "DELETE";
+          this.message = "YOU HAVE SUCCESSFULLY DELETED THE REVIEW";
 
           await this.returnAllReviews();
 
@@ -212,7 +203,9 @@ export default {
 
         if(res.data.message === 'success'){
 
-          window.alert('YOU HAVE SUCCESSFULLY BLOCKED THE PRODUCT');
+          this.title = "BLOCKED";
+          this.message = 'YOU HAVE SUCCESSFULLY BLOCKED THE PRODUCT';
+
           await this.returnAllReviews();
 
           this.selected_review = null;
@@ -243,7 +236,8 @@ export default {
 
         if(res.data.message === 'success'){
 
-          window.alert('YOU HAVE SUCCESSFULLY UNBLOCKED THE PRODUCT');
+          this.title = "UNBLOCKED";
+          this.message = 'YOU HAVE SUCCESSFULLY UNBLOCKED THE PRODUCT';
 
           await this.returnAllReviews();
 

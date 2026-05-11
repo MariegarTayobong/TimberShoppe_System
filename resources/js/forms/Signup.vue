@@ -205,17 +205,6 @@
         </div>
 
     <div class="terms" v-if="userType === 'buyer' && accountInfo === true">
-            <div class="checkbox">
-                <input type="checkbox"
-                    name="location_access"
-                    id="location_access"
-                    v-model="formData.location_access"
-                    :true-value="'yes'"
-                    :false-value="''"
-                    @change="validateField('location_access')"
-                >
-                <label @click="show_permission = true">Allow location access to the nearest shop.</label>
-            </div>
 
             <div class="checkbox">
                 <input type="checkbox"
@@ -311,6 +300,7 @@ export default {
                 age: '',
                 email: '',
                 contact_no: '',
+                address: '',
                 username: '',
                 password: '',
                 confirm_password: '',
@@ -328,6 +318,7 @@ export default {
                     { label: 'Age', type: 'number', name: 'age', id: 'age', value: null,},
                     { label: 'Email', type: 'email', name: 'email', id: 'email'},
                     { label: 'Contact Number', type: 'tel', name: 'contact_no', id: 'contact_no', pattern: '[0-9]{11}'},
+                    { label: 'Address', type: 'text', name: 'address', id: 'address'},
                 ],
                 accountInformation: [
                     { label: 'Username', type: 'text', name: 'username', id: 'username'},
@@ -396,7 +387,7 @@ export default {
                 ? [
                     'firstname', 'lastname', 'gender', 'birthday', 'age',
                     'email', 'contact_no', 'username', 'password', 'confirm_password', 'profile_image',
-                    'location_access', 'terms'
+                    'terms'
                 ]
                 : [
                     'firstname', 'lastname', 'gender', 'birthday', 'age',
@@ -1315,4 +1306,3 @@ input[type="password"]::-ms-reveal {
 
 }
 </style>
-
